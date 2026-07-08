@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
+import { formatCurrency, formatSg, positionLabel, seasonBlurb } from "../lib/format";
 import { CATEGORY_META, CATEGORY_ORDER } from "../lib/game/categories";
+import {
+  buildSeed,
+  categorySgFromAssignments,
+  optimalCategoryBySeason,
+  totalSelectedSg,
+} from "../lib/game/scoring";
+import { getRandomPlayerSeason } from "../lib/game/selection";
 import { simulateSeason } from "../lib/game/simulation";
 import type {
   CategoryBreakdown,
@@ -37,23 +45,6 @@ const ZONE_META: Record<CategoryKey, { className: string; label: string }> = {
 type SpinPhase = "player" | "year" | "ready";
 type YearMode = "current" | "all" | "filter";
 
-function formatSg(value: number) {
-  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}`;
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function positionLabel(position: number) {
-  if (position === 1) return "Win";
-  return `T${position}`;
-}
-
 // On mobile, gently pull a freshly-revealed block/CTA into view so you don't
 // have to scroll to reach the next thing. No-op on wider screens.
 function scrollIntoViewOnMobile(
@@ -63,188 +54,6 @@ function scrollIntoViewOnMobile(
   if (!node || typeof window === "undefined") return;
   if (!window.matchMedia("(max-width: 720px)").matches) return;
   node.scrollIntoView({ behavior: "smooth", block });
-}
-
-const WIN_FLEX_LINES = [
-  "Double meat and guac at Chipotle? Yeah, that's not a problem.",
-  "Go ahead and leave the courtesy car with the valet. You've earned it.",
-  "Buying a round for the whole locker room? Barely dents the checkbook.",
-  "First class home instead of the red-eye in coach. Money's not the issue anymore.",
-];
-
-function seasonBlurb(simulation: SeasonSimulation) {
-  const wins = simulation.results.filter((result) => result.position === 1);
-
-  // Rank-based tail describing how the overall season shook out.
-  const rankTail =
-    simulation.fedExRank <= 5
-      ? "Add it up and this was the real deal, a season-long run at the Cup."
-      : simulation.fedExRank <= 30
-        ? "You did plenty to reach East Lake and hang around the FedEx Cup chatter all summer."
-        : simulation.fedExRank <= 70
-          ? "Playoff-caliber stuff, just not quite enough juice to scare the top of the leaderboard."
-          : simulation.fedExRank <= 100
-            ? "It kept your card safe, even if the season never really cracked the playoff race."
-            : "It wasn't enough to lock down full status, though, so it was a bumpy year despite the odd bright spot.";
-
-  if (wins.length === 0) {
-    return `You never got your hands on a trophy, so this one was all grind and week-to-week consistency. ${rankTail}`;
-  }
-
-  const majorWin = wins.find((result) => result.event.kind === "major");
-  const bigWin = wins.find(
-    (result) =>
-      result.event.kind === "players" ||
-      result.event.kind === "signature" ||
-      result.event.kind === "playoff",
-  );
-  const otherWins = wins.length - 1;
-
-  // A major rewrites the whole season. Even a pile of missed cuts around it
-  // still adds up to a career year, so it gets its own call-out with no
-  // FedEx-rank caveats attached.
-  if (majorWin) {
-    if (simulation.fedExRank > 70) {
-      return `You won ${majorWin.event.name}. You're going down in the history books, and you could have missed the cut every other week and still called it a career year.`;
-    }
-    const extra =
-      otherWins > 0
-        ? ` Stack ${otherWins} more win${otherWins > 1 ? "s" : ""} on top of it and it's an all-timer of a season.`
-        : " Everything else this year was just gravy on top.";
-    return `You won ${majorWin.event.name}. You're going down in the history books.${extra}`;
-  }
-
-  // The Players, a Signature Event, or a playoff event: not the history books,
-  // but a monster payday worth leaning into.
-  if (bigWin) {
-    if (wins.length === 1) {
-      return `You won ${bigWin.event.name}, one of the fattest purses on tour. That's generational-wealth money for a single week's work. ${rankTail}`;
-    }
-    return `You won ${wins.length} times, headlined by ${bigWin.event.name}, and cashed some of the biggest checks of the year. The accountant is very happy. ${rankTail}`;
-  }
-
-  // Regular-event wins only: one hot week that carried the season.
-  const flex =
-    wins.length >= 3
-      ? "We don't fly commercial anymore."
-      : wins.length === 2
-        ? "Tiger would consider it a good month. Most would consider it a good career."
-        : WIN_FLEX_LINES[simulation.earnings % WIN_FLEX_LINES.length];
-  const winText =
-    wins.length === 1
-      ? `You won ${wins[0].event.name}, and that one week saved the season all by itself.`
-      : `You racked up ${wins.length} wins, including ${wins
-          .slice(0, 2)
-          .map((result) => result.event.name)
-          .join(" and ")}.`;
-  return `${winText} ${flex} ${rankTail}`;
-}
-
-function getRandomSeason(seasons: PlayerSeason[], excludedIds: Set<string>) {
-  // Resample until the current run gets a season it has not already revealed.
-  for (let attempt = 0; attempt < 50; attempt += 1) {
-    const candidate = seasons[Math.floor(Math.random() * seasons.length)];
-    if (!excludedIds.has(candidate.id)) return candidate;
-  }
-
-  // The fallback is here for completeness; a four-card game should never reach
-  // it, but future larger modes can still fail gracefully.
-  return seasons.find((season) => !excludedIds.has(season.id)) ?? seasons[0];
-}
-
-function getRandomPlayerSeason(seasons: PlayerSeason[], excludedIds: Set<string>) {
-  const eligibleGroups = seasons.reduce((groups, season) => {
-    const current = groups.get(season.player) ?? [];
-    current.push(season);
-    groups.set(season.player, current);
-    return groups;
-  }, new Map<string, PlayerSeason[]>());
-  const eligiblePlayers = Array.from(eligibleGroups.keys());
-  const availablePlayers = eligiblePlayers.filter((player) =>
-    (eligibleGroups.get(player) ?? []).some((season) => !excludedIds.has(season.id)),
-  );
-  const player =
-    availablePlayers[Math.floor(Math.random() * availablePlayers.length)] ?? eligiblePlayers[0];
-  const playerSeasons = (eligibleGroups.get(player) ?? seasons).filter(
-    (season) => !excludedIds.has(season.id),
-  );
-  const season =
-    playerSeasons[Math.floor(Math.random() * playerSeasons.length)] ??
-    getRandomSeason(seasons, excludedIds);
-  return { player, season, years: playerSeasons.map((item) => item.year) };
-}
-
-function buildSeed(assignments: SlotAssignment[]) {
-  // Convert the four selected player seasons into a deterministic seed so the
-  // completed card always maps to the same simulated premium schedule.
-  return assignments
-    .map((assignment) => `${assignment.category}:${assignment.season.id}`)
-    .join("|")
-    .split("")
-    .reduce((hash, char) => Math.imul(hash ^ char.charCodeAt(0), 16777619), 2166136261);
-}
-
-function totalSelectedSg(assignments: SlotAssignment[]) {
-  return assignments.reduce(
-    (sum, assignment) => sum + assignment.season.sg[assignment.category],
-    0,
-  );
-}
-
-// Collapse the four locked assignments into the per-category SG means the
-// simulation samples around. Any category the player has not yet filled defaults
-// to 0 so the map is always complete.
-function categorySgFromAssignments(
-  assignments: SlotAssignment[],
-): Record<CategoryKey, number> {
-  const map: Record<CategoryKey, number> = {
-    offTee: 0,
-    approach: 0,
-    aroundGreen: 0,
-    putting: 0,
-  };
-  assignments.forEach((assignment) => {
-    map[assignment.category] = assignment.season.sg[assignment.category];
-  });
-  return map;
-}
-
-function permutations<T>(items: T[]): T[][] {
-  if (items.length <= 1) return [items];
-  const result: T[][] = [];
-  items.forEach((item, index) => {
-    const rest = [...items.slice(0, index), ...items.slice(index + 1)];
-    for (const perm of permutations(rest)) {
-      result.push([item, ...perm]);
-    }
-  });
-  return result;
-}
-
-// Given the four selected seasons, find the one-to-one player→category
-// arrangement that maximizes total Strokes Gained (a 4×4 assignment problem,
-// brute-forced over the 24 permutations). Returns each season's ideal category.
-function optimalCategoryBySeason(
-  seasons: PlayerSeason[],
-): Map<string, CategoryKey> {
-  const ideal = new Map<string, CategoryKey>();
-  if (seasons.length !== CATEGORY_ORDER.length) return ideal;
-
-  let bestTotal = -Infinity;
-  let bestOrder = CATEGORY_ORDER;
-  for (const order of permutations(CATEGORY_ORDER)) {
-    const total = seasons.reduce(
-      (sum, season, index) => sum + season.sg[order[index]],
-      0,
-    );
-    if (total > bestTotal) {
-      bestTotal = total;
-      bestOrder = order;
-    }
-  }
-
-  seasons.forEach((season, index) => ideal.set(season.id, bestOrder[index]));
-  return ideal;
 }
 
 function Header() {
@@ -803,9 +612,9 @@ function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
         <table className="event-table">
           <thead>
             <tr>
+              <th>Finish</th>
               <th>Event</th>
               <th>Type</th>
-              <th>Finish</th>
               <th>Week SG</th>
               <th>FedEx</th>
               <th>Earnings</th>
@@ -823,11 +632,11 @@ function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
                       : ""
                 }
               >
+                <td>{result.madeCut ? positionLabel(result.position) : "MC"}</td>
                 <td>{result.event.name}</td>
                 <td>
                   <span className="pill">{result.event.kind}</span>
                 </td>
-                <td>{result.madeCut ? positionLabel(result.position) : "MC"}</td>
                 <td>{formatSg(result.strokes)}</td>
                 <td>{result.madeCut ? result.fedExPoints : 0}</td>
                 <td>{result.madeCut ? formatCurrency(result.earnings) : "—"}</td>

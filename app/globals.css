@@ -1040,17 +1040,47 @@ button {
     font-size: clamp(2.1rem, 12vw, 3.4rem);
   }
 
-  .course-board,
+  /* Overlay the selection boxes on top of the course drawing instead of
+     stacking them beside/below it. The image becomes a faded backdrop that
+     fills the whole board while the zones sit directly on top. */
+  .course-board {
+    position: relative;
+    display: block;
+    min-height: 560px;
+    padding: 14px;
+  }
+
+  .course-board__art {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    opacity: 0.32;
+    pointer-events: none;
+  }
+
   .course-board__image {
-    min-height: 520px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    object-fit: cover;
+    object-position: center;
   }
 
   .course-zone-rail {
+    position: relative;
+    z-index: 1;
     grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .mulligan-rail {
+    position: relative;
+    z-index: 1;
+    margin-top: 12px;
   }
 
   .course-zone {
-    min-height: 94px;
+    min-height: 84px;
     padding: 10px;
   }
 
@@ -1363,5 +1393,16 @@ button {
   .playoff-stat-rail,
   .playoff-summary__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Keep long currency values (e.g. "Earned") contained within their cell
+     instead of spilling past the box on narrow screens. */
+  .playoff-summary__grid div {
+    padding: 14px;
+  }
+
+  .playoff-summary__grid strong {
+    font-size: clamp(1.05rem, 4.6vw, 1.6rem);
+    overflow-wrap: anywhere;
   }
 }
