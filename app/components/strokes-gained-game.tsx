@@ -247,12 +247,14 @@ function SpinnerPanel({
   phase,
   pickNumber,
   complete,
+  showYear,
 }: {
   displayPlayer: string;
   displayYear: string;
   phase: SpinPhase;
   pickNumber: number;
   complete: boolean;
+  showYear: boolean;
 }) {
   return (
     <section className="spinner-panel" aria-label="Current player and year">
@@ -260,15 +262,17 @@ function SpinnerPanel({
         <span className="eyebrow">Pick {pickNumber} of 4</span>
         <span className="pill">{complete ? "Complete" : phase === "ready" ? "Ready" : "Spinning"}</span>
       </div>
-      <div className="spinner-panel__body">
+      <div className={`spinner-panel__body ${showYear ? "" : "spinner-panel__body--solo"}`}>
         <div className={`reel reel--player ${phase === "player" ? "is-spinning" : ""}`}>
           <span className="eyebrow">Player</span>
           <strong>{displayPlayer}</strong>
         </div>
-        <div className={`reel reel--year ${phase === "year" ? "is-spinning" : ""}`}>
-          <span className="eyebrow">Year</span>
-          <strong>{displayYear}</strong>
-        </div>
+        {showYear ? (
+          <div className={`reel reel--year ${phase === "year" ? "is-spinning" : ""}`}>
+            <span className="eyebrow">Year</span>
+            <strong>{displayYear}</strong>
+          </div>
+        ) : null}
       </div>
     </section>
   );
@@ -846,7 +850,7 @@ export function StrokesGainedGame() {
   const [displayYear, setDisplayYear] = useState("...");
   const [phase, setPhase] = useState<SpinPhase>("player");
   const [mulligans, setMulligans] = useState(0);
-  const [yearMode, setYearMode] = useState<YearMode>("all");
+  const [yearMode, setYearMode] = useState<YearMode>("current");
   const [selectedYears, setSelectedYears] = useState<number[]>([LATEST_YEAR]);
   const timers = useRef<number[]>([]);
 
@@ -1031,6 +1035,7 @@ export function StrokesGainedGame() {
             phase={phase}
             pickNumber={Math.min(assignments.length + 1, 4)}
             complete={complete}
+            showYear={yearMode !== "current"}
           />
 
           {statsMode === "show" && currentSeason && phase === "ready" && !complete ? (

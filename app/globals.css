@@ -1270,6 +1270,10 @@ button {
     grid-template-columns: minmax(0, 1fr) 160px;
   }
 
+  .spinner-panel__body--solo {
+    grid-template-columns: 1fr;
+  }
+
   .course-board,
   .course-board__image {
     min-height: 680px;
@@ -1337,7 +1341,12 @@ button {
 
   .reel--player strong {
     min-height: auto;
-    font-size: clamp(2.1rem, 12vw, 3.4rem);
+    /* Sized so even the longest names stay on a single line rather than
+       wrapping to two lines on some players and one on others. */
+    font-size: clamp(1.1rem, 5.2vw, 2rem);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   /* Overlay the selection boxes on top of the course drawing instead of
