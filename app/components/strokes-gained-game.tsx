@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
 import { formatCurrency, formatSg, positionLabel, seasonBlurb } from "../lib/format";
@@ -44,16 +45,22 @@ const ZONE_META: Record<CategoryKey, { className: string; label: string }> = {
 
 type SpinPhase = "player" | "year" | "ready";
 type YearMode = "current" | "all" | "filter";
+type StatsMode = "blind" | "show";
+type FieldMode = "entire" | "notables";
 
-// On mobile, gently pull a freshly-revealed block/CTA into view so you don't
-// have to scroll to reach the next thing. No-op on wider screens.
-function scrollIntoViewOnMobile(
+// Gently pull a freshly-revealed block/CTA into view so you don't have to
+// realise there's a next thing and scroll to it yourself. Runs on every
+// screen size; honours reduced-motion. Deferred a frame so the target has
+// mounted/laid out before we scroll to it.
+function scrollIntoViewSmooth(
   node: HTMLElement | null,
   block: ScrollLogicalPosition = "start",
 ) {
   if (!node || typeof window === "undefined") return;
-  if (!window.matchMedia("(max-width: 720px)").matches) return;
-  node.scrollIntoView({ behavior: "smooth", block });
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  requestAnimationFrame(() => {
+    node.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block });
+  });
 }
 
 function Header() {
@@ -63,6 +70,174 @@ function Header() {
         <div className="wordmark">Strokes Game</div>
       </div>
     </header>
+  );
+}
+
+function ModeOption({
+  active,
+  disabled,
+  title,
+  hint,
+  soon,
+  onSelect,
+}: {
+  active: boolean;
+  disabled?: boolean;
+  title: string;
+  hint?: string;
+  soon?: boolean;
+  onSelect?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      className={`mode-option ${active ? "is-active" : ""}`}
+      disabled={disabled}
+      aria-pressed={active}
+      onClick={onSelect}
+    >
+      <strong>{title}</strong>
+      {soon ? <span className="mode-option__soon">Coming soon</span> : null}
+      {hint ? <span className="mode-option__hint">{hint}</span> : null}
+    </button>
+  );
+}
+
+function GameModeChooser({
+  statsMode,
+  yearMode,
+  fieldMode,
+  selectedYears,
+  isChange,
+  onStatsMode,
+  onYearMode,
+  onFieldMode,
+  onToggleYear,
+  onConfirm,
+}: {
+  statsMode: StatsMode;
+  yearMode: YearMode;
+  fieldMode: FieldMode;
+  selectedYears: number[];
+  isChange: boolean;
+  onStatsMode: (mode: StatsMode) => void;
+  onYearMode: (mode: YearMode) => void;
+  onFieldMode: (mode: FieldMode) => void;
+  onToggleYear: (year: number) => void;
+  onConfirm: () => void;
+}) {
+  const confirmRef = useRef<HTMLButtonElement | null>(null);
+  const canConfirm = yearMode !== "filter" || selectedYears.length > 0;
+
+  useEffect(() => {
+    confirmRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="mode-chooser"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="mode-chooser-title"
+    >
+      <div className="mode-chooser__backdrop" />
+      <div className="mode-chooser__panel">
+        <span className="eyebrow">Choose Your Game Mode</span>
+        <h2 id="mode-chooser-title">
+          Build the perfect player to win the FedEx Cup by taking the best pieces of their game.
+        </h2>
+
+        <fieldset className="mode-group">
+          <legend>Stats</legend>
+          <p className="mode-group__hint">
+            Show the stats or only see a name when placing a player into a strokes gained category.
+          </p>
+          <div className="mode-options">
+            <ModeOption
+              active={statsMode === "blind"}
+              title="Blind"
+              hint="See only the name until you lock them in."
+              onSelect={() => onStatsMode("blind")}
+            />
+            <ModeOption
+              active={statsMode === "show"}
+              title="Show Stats"
+              hint="See the strokes gained before you place them."
+              onSelect={() => onStatsMode("show")}
+            />
+          </div>
+        </fieldset>
+
+        <fieldset className="mode-group">
+          <legend>Time Frame</legend>
+          <p className="mode-group__hint">Choose your time frame.</p>
+          <div className="mode-options mode-options--trio">
+            <ModeOption
+              active={yearMode === "all"}
+              title="All Time"
+              onSelect={() => onYearMode("all")}
+            />
+            <ModeOption
+              active={yearMode === "current"}
+              title="Current"
+              onSelect={() => onYearMode("current")}
+            />
+            <ModeOption
+              active={yearMode === "filter"}
+              title="Custom"
+              onSelect={() => onYearMode("filter")}
+            />
+          </div>
+          {yearMode === "filter" ? (
+            <div className="mode-years">
+              {AVAILABLE_YEARS.map((year) => (
+                <label key={year}>
+                  <input
+                    type="checkbox"
+                    checked={selectedYears.includes(year)}
+                    onChange={() => onToggleYear(year)}
+                  />
+                  <span>{year}</span>
+                </label>
+              ))}
+            </div>
+          ) : null}
+        </fieldset>
+
+        <fieldset className="mode-group">
+          <legend>Field</legend>
+          <div className="mode-options">
+            <ModeOption
+              active={fieldMode === "entire"}
+              title="Entire Field"
+              onSelect={() => onFieldMode("entire")}
+            />
+            <ModeOption active={false} disabled title="Notables" soon />
+          </div>
+        </fieldset>
+
+        <button
+          type="button"
+          className="primary-button mode-chooser__confirm"
+          onClick={onConfirm}
+          disabled={!canConfirm}
+          ref={confirmRef}
+        >
+          {isChange ? "Update Game Mode" : "Start Your Round"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SiteFooter() {
+  return (
+    <footer className="site-footer">
+      <span className="wordmark">Strokes Game</span>
+      <Link className="ghost-button site-footer__contact" href="/contact">
+        Contact Us
+      </Link>
+    </footer>
   );
 }
 
@@ -95,74 +270,6 @@ function SpinnerPanel({
           <strong>{displayYear}</strong>
         </div>
       </div>
-    </section>
-  );
-}
-
-function YearFilterControl({
-  mode,
-  selectedYears,
-  onModeChange,
-  onToggleYear,
-}: {
-  mode: YearMode;
-  selectedYears: number[];
-  onModeChange: (mode: YearMode) => void;
-  onToggleYear: (year: number) => void;
-}) {
-  const selectedLabel =
-    selectedYears.length === 0
-      ? "No years"
-      : selectedYears.length === 1
-        ? String(selectedYears[0])
-        : `${selectedYears.length} years`;
-
-  return (
-    <section className="year-filter" aria-label="Years included">
-      <div className="year-filter__tabs">
-        <button
-          type="button"
-          className={mode === "current" ? "is-active" : ""}
-          onClick={() => onModeChange("current")}
-        >
-          Current Year
-        </button>
-        <button
-          type="button"
-          className={mode === "all" ? "is-active" : ""}
-          onClick={() => onModeChange("all")}
-        >
-          All Time
-        </button>
-        <button
-          type="button"
-          className={mode === "filter" ? "is-active" : ""}
-          onClick={() => onModeChange("filter")}
-        >
-          Filter
-        </button>
-      </div>
-
-      {mode === "filter" ? (
-        <div className="year-filter__drawer">
-          <div className="year-filter__summary">
-            <span className="eyebrow">Years Included</span>
-            <strong>{selectedLabel}</strong>
-          </div>
-          <div className="year-filter__years">
-            {AVAILABLE_YEARS.map((year) => (
-              <label key={year}>
-                <input
-                  type="checkbox"
-                  checked={selectedYears.includes(year)}
-                  onChange={() => onToggleYear(year)}
-                />
-                <span>{year}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }
@@ -404,10 +511,10 @@ function PlayoffStageBlock({
     [stage],
   );
 
-  // Once the stats settle, pull the CTA into view on mobile.
+  // Once the stats settle, pull the CTA into view so the next step is obvious.
   useEffect(() => {
     if (summaryReady && isCurrent) {
-      scrollIntoViewOnMobile(continueRef.current, "center");
+      scrollIntoViewSmooth(continueRef.current, "center");
     }
   }, [summaryReady, isCurrent]);
 
@@ -670,16 +777,22 @@ function SeasonPlayback({
     if (node) currentRef.current = node;
   }, []);
 
-  // Reset the playback whenever a brand-new season is simulated.
+  // The whole playback section, so we can pull it into view the moment the
+  // season is simulated (i.e. right after the 4th category is assigned).
+  const sectionRef = useRef<HTMLElement | null>(null);
+
+  // Reset the playback whenever a brand-new season is simulated, and scroll it
+  // into view so it's clear the run has moved on from category assignment.
   useEffect(() => {
     setStep(0);
+    scrollIntoViewSmooth(sectionRef.current, "start");
   }, [simulation]);
 
-  // On mobile, push the freshly-revealed block into view after each advance so
-  // you don't have to scroll to reach the next CTA. Skip the initial render.
+  // Push the freshly-revealed block into view after each advance so you don't
+  // have to scroll to reach the next CTA. Skip the initial render.
   useEffect(() => {
     if (step === 0) return;
-    scrollIntoViewOnMobile(currentRef.current, "start");
+    scrollIntoViewSmooth(currentRef.current, "start");
   }, [step]);
 
   const advance = useCallback(() => setStep((value) => value + 1), []);
@@ -691,7 +804,7 @@ function SeasonPlayback({
   };
 
   return (
-    <section className="playback" aria-label="Season playback">
+    <section className="playback" aria-label="Season playback" ref={sectionRef}>
       <div className="playback__stack">
         <RegularSeasonBlock
           summary={simulation.regularSeason}
@@ -724,6 +837,9 @@ function SeasonPlayback({
 }
 
 export function StrokesGainedGame() {
+  const [gameModeChosen, setGameModeChosen] = useState(false);
+  const [statsMode, setStatsMode] = useState<StatsMode>("blind");
+  const [fieldMode, setFieldMode] = useState<FieldMode>("entire");
   const [assignments, setAssignments] = useState<SlotAssignment[]>([]);
   const [currentSeason, setCurrentSeason] = useState<PlayerSeason | undefined>();
   const [displayPlayer, setDisplayPlayer] = useState("...");
@@ -882,16 +998,32 @@ export function StrokesGainedGame() {
 
   return (
     <main className="page-shell">
+      {!gameModeChosen ? (
+        <GameModeChooser
+          statsMode={statsMode}
+          yearMode={yearMode}
+          fieldMode={fieldMode}
+          selectedYears={selectedYears}
+          isChange={assignments.length > 0 || mulligans > 0}
+          onStatsMode={setStatsMode}
+          onYearMode={handleYearModeChange}
+          onFieldMode={setFieldMode}
+          onToggleYear={handleToggleYear}
+          onConfirm={() => setGameModeChosen(true)}
+        />
+      ) : null}
+
       <Header />
 
       <section className="play-layout">
         <div className="play-layout__left">
-          <YearFilterControl
-            mode={yearMode}
-            selectedYears={selectedYears}
-            onModeChange={handleYearModeChange}
-            onToggleYear={handleToggleYear}
-          />
+          <button
+            type="button"
+            className="ghost-button mode-change-button"
+            onClick={() => setGameModeChosen(false)}
+          >
+            Change Game Mode
+          </button>
 
           <SpinnerPanel
             displayPlayer={displayPlayer}
@@ -900,6 +1032,15 @@ export function StrokesGainedGame() {
             pickNumber={Math.min(assignments.length + 1, 4)}
             complete={complete}
           />
+
+          {statsMode === "show" && currentSeason && phase === "ready" && !complete ? (
+            <div className="stat-reveal" aria-label="Current player stats">
+              <span className="eyebrow">
+                On the Clock — {currentSeason.player} {currentSeason.year}
+              </span>
+              <StatList season={currentSeason} />
+            </div>
+          ) : null}
 
           <div className="score-strip compact" aria-label="Run status">
             <div>
@@ -933,6 +1074,8 @@ export function StrokesGainedGame() {
           <AssignmentStats assignments={assignments} />
         </>
       ) : null}
+
+      <SiteFooter />
     </main>
   );
 }
