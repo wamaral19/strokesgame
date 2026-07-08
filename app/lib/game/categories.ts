@@ -1,10 +1,10 @@
 import type { CategoryKey } from "./types";
 
 export const CATEGORY_ORDER: CategoryKey[] = [
-  "offTee",
-  "approach",
-  "aroundGreen",
   "putting",
+  "aroundGreen",
+  "approach",
+  "offTee",
 ];
 
 export const CATEGORY_META: Record<

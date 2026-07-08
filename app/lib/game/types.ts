@@ -79,9 +79,13 @@ export type PlayoffStageResult = {
   isFinale: boolean;
   advanced: boolean;
   writeup: StageWriteup;
+  // A one-line flavor note describing which part of the bag ran hot or cold
+  // this week, derived from the category breakdown deltas.
+  sgNote: string;
 };
 
 export type SeasonSimulation = {
+  seed: number;
   totalSg: number;
   averageFinish: number;
   fedExPoints: number;

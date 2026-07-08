@@ -657,8 +657,7 @@ button {
 
 .course-zone__player {
   display: grid;
-  gap: 5px;
-  margin-top: 18px;
+  gap: 4px;
 }
 
 .course-zone__player strong {
@@ -668,8 +667,15 @@ button {
   line-height: 0.98;
 }
 
-.course-zone__player span,
-.course-zone__player em {
+.course-zone__meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.course-zone__meta span,
+.course-zone__meta em {
   font-family: var(--font-condensed);
   font-size: 1rem;
   font-style: normal;
@@ -686,14 +692,12 @@ button {
 }
 
 .mulligan-button {
-  margin-top: 10px;
-  justify-self: start;
   border: 1px solid var(--brand-ink);
   background: transparent;
   color: var(--brand-ink);
-  padding: 5px 10px;
+  padding: 4px 9px;
   font-family: var(--font-condensed);
-  font-size: 0.66rem;
+  font-size: 0.62rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   line-height: 1;
@@ -817,6 +821,9 @@ button {
 
 .primary-button,
 .ghost-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 44px;
   border-radius: 999px;
   padding: 0 20px;
@@ -824,6 +831,10 @@ button {
   font-size: 0.86rem;
   font-weight: 800;
   letter-spacing: 0.11em;
+  /* Nudge right to offset the trailing letter-spacing so the label reads centered. */
+  text-indent: 0.11em;
+  line-height: 1;
+  text-align: center;
   text-transform: uppercase;
 }
 
@@ -978,13 +989,15 @@ button {
 .mode-option {
   display: flex;
   flex-direction: column;
+  align-items: center;
+  justify-content: center;
   gap: 4px;
   min-height: 52px;
   padding: 12px 12px;
   border: 1px solid var(--line-strong);
   background: rgba(255, 250, 240, 0.94);
   color: var(--brand-ink);
-  text-align: left;
+  text-align: center;
 }
 
 .mode-option strong {
@@ -1074,6 +1087,18 @@ button {
   background: rgba(255, 250, 240, 0.9);
   box-shadow: 0 12px 38px rgba(26, 26, 26, 0.08);
   padding: 14px;
+}
+
+/* No header inside the reveal box, so let the stats sit flush against the top
+   and drop the first row's divider — the top edge then reads as light as the
+   bottom rather than doubling up on the box border. */
+.stat-reveal .stat-list {
+  margin-top: 0;
+}
+
+.stat-reveal .stat-row:first-child {
+  border-top: none;
+  padding-top: 0;
 }
 
 .results {
@@ -1525,6 +1550,11 @@ button {
   line-height: 0.98;
 }
 
+.playoff-block__head--event {
+  justify-content: center;
+  text-align: center;
+}
+
 .playoff-block__seed {
   font-family: var(--font-condensed);
   font-size: 0.82rem;
@@ -1546,12 +1576,102 @@ button {
   margin-top: 22px;
 }
 
+/* True SG caption + hover hint */
+.playoff-stat-rail__caption {
+  display: flex;
+  align-items: center;
+  margin-top: 18px;
+}
+
+.info-hint {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: help;
+  outline: none;
+}
+
+.info-hint__label {
+  font-family: var(--font-condensed);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.62);
+}
+
+.info-hint__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  font-family: var(--font-condensed);
+  font-size: 0.66rem;
+  font-weight: 800;
+  font-style: italic;
+  line-height: 1;
+  color: rgba(26, 26, 26, 0.62);
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.info-hint:hover .info-hint__icon,
+.info-hint:focus-visible .info-hint__icon {
+  border-color: var(--brand-primary);
+  color: var(--brand-deep);
+}
+
+.info-hint__bubble {
+  position: absolute;
+  bottom: calc(100% + 9px);
+  left: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(320px, 78vw);
+  padding: 11px 13px;
+  border-radius: 10px;
+  background: #1a1a1a;
+  color: #fbf7ec;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  box-shadow: 0 12px 30px rgba(26, 26, 26, 0.28);
+  opacity: 0;
+  transform: translateY(4px);
+  pointer-events: none;
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.info-hint__bubble::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 14px;
+  border: 6px solid transparent;
+  border-top-color: #1a1a1a;
+}
+
+.info-hint:hover .info-hint__bubble,
+.info-hint:focus-visible .info-hint__bubble {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Category reels */
 .playoff-stat-rail {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-top: 20px;
+}
+
+.playoff-stat-rail__caption + .playoff-stat-rail {
+  margin-top: 10px;
 }
 
 .playoff-stat {
@@ -1693,6 +1813,12 @@ button {
   line-height: 1.5;
 }
 
+.playoff-writeup__note {
+  font-style: italic;
+  color: rgba(26, 26, 26, 0.52);
+  font-size: 0.94rem;
+}
+
 .playoff-summary .primary-button,
 .playoff-block--regular .playoff-block__head {
   flex-direction: column;
@@ -1706,6 +1832,188 @@ button {
 
 .playoff-block--final {
   border-width: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Season recap. The top FedEx bar now carries all four headline stats in a 2x2
+   split; below it sit the game-mode chips, a four-quadrant lineup with each
+   player's category strokes gained, a total-SG box, and Notable Finishes.
+   --------------------------------------------------------------------------- */
+.fedex-bar--quad {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.fedex-bar--quad strong {
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.recap-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 10px;
+  margin-top: 14px;
+}
+
+.recap-mode__label,
+.recap-mode__value {
+  font-family: var(--font-condensed);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: rgba(26, 26, 26, 0.72);
+}
+
+.recap-mode__label {
+  font-weight: 800;
+  color: rgba(26, 26, 26, 0.5);
+}
+
+/* Lineup — a compact, clear (not green) four-quadrant box with a merged
+   left-justified total row across the bottom. */
+.recap-lineup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+  margin-top: 16px;
+}
+
+.recap-lineup-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: #fffaf0;
+  padding: 9px 12px;
+}
+
+.recap-lineup-cat {
+  font-family: var(--font-condensed);
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.recap-lineup-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.recap-lineup-player {
+  font-size: 0.9rem;
+  font-weight: 640;
+  overflow-wrap: anywhere;
+}
+
+.recap-lineup-val {
+  font-family: var(--font-condensed);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.recap-lineup-val.is-negative {
+  color: var(--brand-flag);
+}
+
+.recap-lineup-total {
+  grid-column: 1 / -1;
+  background: #d8ecc9;
+  padding: 9px 12px;
+  font-family: var(--font-condensed);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+
+.recap-lineup-total .is-negative {
+  color: var(--brand-flag);
+}
+
+.notable-finishes {
+  margin-top: 24px;
+}
+
+.notable-finishes__title {
+  display: block;
+  font-family: var(--font-condensed);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.62);
+}
+
+.notable-finishes ul {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.notable-finishes li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line-strong);
+  padding: 10px 14px;
+}
+
+.notable-finishes li.is-win {
+  border-left-color: var(--brand-primary);
+  background: rgba(88, 145, 74, 0.08);
+}
+
+.notable-finishes__pos {
+  flex: 0 0 auto;
+  min-width: 48px;
+  font-family: var(--font-condensed);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand-deep);
+}
+
+.notable-finishes__event {
+  flex: 1 1 auto;
+  font-weight: 640;
+  overflow-wrap: anywhere;
+}
+
+.notable-finishes__empty {
+  margin: 12px 0 0;
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.recap-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.recap-actions__hint {
+  flex: 1 1 220px;
+  font-size: 0.9rem;
+  color: rgba(26, 26, 26, 0.6);
+}
+
+@media (max-width: 720px) {
+  .fedex-bar--quad {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 720px) {

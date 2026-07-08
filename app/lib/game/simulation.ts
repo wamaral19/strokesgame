@@ -1,4 +1,37 @@
 import { CATEGORY_ORDER } from "./categories";
+import {
+  CATEGORY_PHRASE,
+  PO_ADVANCED_BMW,
+  PO_ADVANCED_TC,
+  PO_ELIM_BEFORE_TC,
+  PO_ELIM_FIRST,
+  PO_LOST_AS_FAVORITE,
+  PO_WON_BMW,
+  PO_WON_FIRST,
+  PO_WON_TC,
+  REG_BAD_STATS_GOOD,
+  REG_BUBBLE,
+  REG_CONSISTENT_TOP10,
+  REG_FEAST_FAMINE,
+  REG_MID,
+  REG_MISSED,
+  REG_MULTI_WIN,
+  REG_NO_WIN_RUNNER_UP,
+  REG_NO_WIN_TOP3_OUTSIDE,
+  REG_SINGLE_WIN,
+  REG_STAT_MONSTER,
+  REG_TOP5,
+  REG_TOP10,
+  REG_TOP30,
+  REG_WIN_OUTSIDE,
+  SG_BALANCED,
+  SG_BETTER,
+  SG_ONE_CARRIES,
+  SG_ONE_SINKS,
+  SG_WORSE,
+  fill,
+  pick,
+} from "./copy";
 import { FEDEX_PLAYOFF_SCHEDULE, PREMIUM_2026_SCHEDULE } from "./schedule";
 import { createRandom, randomBetween, randomNormal } from "./random";
 import type {
@@ -95,29 +128,29 @@ const POINT_TABLES: Record<ScheduleEvent["kind"], Array<[number, number]>> = {
     [50, 14.25],
     [60, 9],
   ],
-  // The first two Playoffs events (St. Jude, BMW) award 750 to the winner,
-  // matching THE PLAYERS and the majors. The Tour Championship finale awards no
-  // points at all (even-par start, best 72-hole score wins the Cup) — the runner
-  // zeroes the finale's contribution, so this table only ever applies to the
-  // first two stages.
+  // The first two Playoffs events (St. Jude, BMW) award quadruple points —
+  // 4x the regular-event table, so the winner banks 2,000. The Tour Championship
+  // finale awards no points at all (even-par start, best 72-hole score wins the
+  // Cup) — the runner zeroes the finale's contribution, so this table only ever
+  // applies to the first two stages.
   playoff: [
-    [1, 750],
-    [2, 500],
-    [3, 350],
-    [4, 325],
-    [5, 300],
-    [6, 275],
-    [7, 250],
-    [8, 225],
-    [9, 200],
-    [10, 175],
-    [15, 95],
-    [20, 60],
-    [25, 47],
-    [30, 37],
-    [40, 22],
-    [50, 14.25],
-    [60, 9],
+    [1, 2000],
+    [2, 1200],
+    [3, 760],
+    [4, 540],
+    [5, 440],
+    [6, 400],
+    [7, 360],
+    [8, 340],
+    [9, 320],
+    [10, 300],
+    [15, 220],
+    [20, 180],
+    [25, 142],
+    [30, 112],
+    [40, 64],
+    [50, 34],
+    [60, 20],
   ],
 };
 
@@ -194,12 +227,15 @@ const CATEGORY_WEEK_SD: Record<CategoryKey, number> = {
 // SD of the field's weekly SG outcomes; sets how spread out a leaderboard is
 // and how random the top of it plays.
 const FIELD_SPREAD = 1.75;
-// The field's mean SG scales with field strength. SG is measured against the
-// tour baseline, so a weak full-field event centres just above 0, while
-// signature events and majors are stacked with elite players and sit ~+1.1 to
-// +1.5 — which is why even a +2.7 season only finishes ~T13 on average there,
-// and winning one takes a genuinely huge (~+5 SG) week.
-const FIELD_MEAN_SLOPE = 2.27;
+// The field's mean SG scales with field strength. SG here is "true" strokes
+// gained — measured against the average PGA Tour field (the tour baseline), the
+// same scale as a player's season-long stats. A weak full-field event centres
+// just above 0, while signature events, majors, and the playoffs are stacked
+// with elite players and sit higher. The slope was halved (2.27 -> 1.135) so
+// those elite fields sit closer to the tour baseline: a genuinely strong true-SG
+// week now climbs the leaderboard instead of drowning in a field whose median
+// player is already +1.3, while winning still takes a real spike week.
+const FIELD_MEAN_SLOPE = 1.135;
 const FIELD_MEAN_ANCHOR = 0.316;
 
 function fieldSize(event: ScheduleEvent) {
@@ -531,67 +567,131 @@ function getSeasonStatus(finalRank: number, regularSeasonRank: number) {
   };
 }
 
-function regularSeasonWriteup(rank: number, madePlayoffs: boolean): StageWriteup {
-  if (!madePlayoffs) {
-    return {
-      label: "Regular Season",
-      headline: "The season ends here.",
-      detail:
-        "You finished outside the top 70, so there's no FedEx Cup Playoffs run this year. The regular season was the whole story.",
-    };
+// Everything the regular-season recap needs to choose its copy, derived from the
+// season's event results.
+type RegularSeasonSignals = {
+  rank: number;
+  madePlayoffs: boolean;
+  winNames: string[];
+  totalSg: number;
+  top10Count: number;
+  bestFinish: number;
+  hasTop3: boolean;
+  hasRunnerUp: boolean;
+  missedCuts: number;
+  topFinishEvent?: string;
+};
+
+// The recap reads as [optional win/no-win lead] + [rank-tier "rest"]. The lead
+// characterises HOW the season went (a win, a near-miss, a stat-monster grind);
+// the rest states WHERE it finished. Copy is picked deterministically from the
+// season seed so a given run always narrates the same way.
+function regularSeasonWriteup(
+  signals: RegularSeasonSignals,
+  seed: number,
+): StageWriteup {
+  const {
+    rank,
+    madePlayoffs,
+    winNames,
+    totalSg,
+    top10Count,
+    bestFinish,
+    hasTop3,
+    hasRunnerUp,
+    missedCuts,
+    topFinishEvent,
+  } = signals;
+  const winCount = winNames.length;
+
+  const rankPool = !madePlayoffs
+    ? REG_MISSED
+    : rank <= 5
+      ? REG_TOP5
+      : rank <= 10
+        ? REG_TOP10
+        : rank <= 30
+          ? REG_TOP30
+          : rank <= 60
+            ? REG_MID
+            : REG_BUBBLE;
+  const rest = pick(rankPool, seed);
+
+  const leadSeed = seed >> 2;
+  let lead = "";
+  if (winCount >= 1 && missedCuts >= 3 && hasTop3) {
+    lead = pick(REG_FEAST_FAMINE, leadSeed);
+  } else if (winCount >= 2) {
+    lead = pick(REG_MULTI_WIN, leadSeed);
+  } else if (winCount === 1) {
+    lead =
+      rank > 30 || totalSg < 0.3
+        ? pick(REG_WIN_OUTSIDE, leadSeed)
+        : pick(REG_SINGLE_WIN, leadSeed);
+  } else if (!madePlayoffs && hasTop3 && topFinishEvent) {
+    lead = fill(pick(REG_NO_WIN_TOP3_OUTSIDE, leadSeed), {
+      tournament: topFinishEvent,
+    });
+  } else if (hasRunnerUp) {
+    lead = pick(REG_NO_WIN_RUNNER_UP, leadSeed);
+  } else if (top10Count >= 3) {
+    lead = pick(REG_CONSISTENT_TOP10, leadSeed);
+  } else if (totalSg >= 2.0) {
+    lead = pick(REG_STAT_MONSTER, leadSeed);
+  } else if (rank <= 30 && totalSg < 0.5) {
+    lead = pick(REG_BAD_STATS_GOOD, leadSeed);
   }
 
-  if (rank <= 5) {
-    return {
-      label: "Regular Season",
-      headline: "You're a top seed.",
-      detail:
-        "A monster regular season lands you among the very top seeds heading into the FedEx Cup Playoffs. Take care of business over three weeks and the Cup is yours to lose.",
-    };
-  }
-
-  if (rank <= 30) {
-    return {
-      label: "Regular Season",
-      headline: "You're in the playoffs.",
-      detail:
-        "You got the job done over the regular season and locked up a strong seed into the FedEx Cup Playoffs. Let's see if you can get hot and finish things off.",
-    };
-  }
+  const headline = !madePlayoffs
+    ? "The season ends here."
+    : rank <= 5
+      ? "You're a top seed."
+      : rank <= 10
+        ? "A top-10 regular season."
+        : rank <= 60
+          ? "You're in the playoffs."
+          : "You snuck into the playoffs.";
 
   return {
     label: "Regular Season",
-    headline: "You snuck into the playoffs.",
-    detail:
-      "You did just enough over the regular season to make it through to the FedEx Cup Playoffs. It'll take a hot streak from here, but you're dancing. Let's see if you can finish things off.",
+    headline,
+    detail: lead ? `${lead} ${rest}` : rest,
   };
 }
 
 function playoffStageWriteup(
   playoffIndex: number,
+  eventName: string,
   isFinale: boolean,
   advanced: boolean,
+  rankBefore: number,
   rankAfter: number,
+  wonEvent: boolean,
+  seed: number,
 ): StageWriteup {
   if (isFinale) {
+    const label = "Tour Championship";
     if (rankAfter === 1) {
+      return { label, headline: "FedEx Cup Champion.", detail: pick(PO_WON_TC, seed) };
+    }
+    // Entered East Lake as the No. 1 seed but someone else lifted the Cup.
+    if (rankBefore === 1) {
       return {
-        label: "Tour Championship",
-        headline: "FedEx Cup Champion.",
-        detail:
-          "You closed it out at East Lake and took the whole thing. Grab the crystal, clear the mantle, and enjoy the offseason as the best player on the planet.",
+        label,
+        headline: `You finished No. ${rankAfter} in the FedEx Cup.`,
+        detail: pick(PO_LOST_AS_FAVORITE, seed),
       };
     }
     if (rankAfter <= 5) {
       return {
-        label: "Tour Championship",
+        label,
         headline: `You finished No. ${rankAfter} in the FedEx Cup.`,
         detail:
           "A genuine run at the Cup that came up just short at East Lake. Nobody's feeling sorry for you, and they shouldn't.",
       };
     }
     return {
-      label: "Tour Championship",
+      label,
       headline: `You finished No. ${rankAfter} in the FedEx Cup.`,
       detail:
         "You teed it up at East Lake with the Cup on the line. It didn't fall your way, but a Tour Championship appearance is a season most players would sign for.",
@@ -599,37 +699,58 @@ function playoffStageWriteup(
   }
 
   if (playoffIndex === 0) {
+    if (wonEvent) {
+      return { label: eventName, headline: "You won the St. Jude.", detail: pick(PO_WON_FIRST, seed) };
+    }
     if (advanced) {
-      return {
-        label: "FedEx St. Jude Championship",
-        headline: "On to the BMW.",
-        detail:
-          "Top 50 after the St. Jude — you're moving on to the BMW Championship with East Lake squarely in sight.",
-      };
+      return { label: eventName, headline: "On to the BMW.", detail: pick(PO_ADVANCED_BMW, seed) };
     }
     return {
-      label: "FedEx St. Jude Championship",
+      label: eventName,
       headline: "The run ends at the St. Jude.",
-      detail:
-        "You came up short of the top 50, so the playoff run stops in week one. A postseason cameo still beats an early flight home.",
+      detail: pick(PO_ELIM_FIRST, seed),
     };
   }
 
   // BMW Championship
+  if (wonEvent) {
+    return { label: eventName, headline: "You won the BMW.", detail: pick(PO_WON_BMW, seed) };
+  }
   if (advanced) {
-    return {
-      label: "BMW Championship",
-      headline: "You're going to East Lake.",
-      detail:
-        "Inside the top 30 when it counted — you punched your ticket to the Tour Championship with a live shot at the Cup.",
-    };
+    return { label: eventName, headline: "You're going to East Lake.", detail: pick(PO_ADVANCED_TC, seed) };
   }
   return {
-    label: "BMW Championship",
+    label: eventName,
     headline: "One stop short of East Lake.",
-    detail:
-      "You landed just outside the top 30, so the Tour Championship goes on without you. Reaching the BMW is still a genuinely strong year.",
+    detail: pick(PO_ELIM_BEFORE_TC, seed),
   };
+}
+
+// A one-line note on which part of the bag drove the week, from the category
+// deltas vs. the player's season means. Big single-category swings (>= 1.0
+// stroke) name the club directly; otherwise the note describes the run as
+// carried, sunk, or balanced by the widest gap.
+function playoffSgNote(categories: CategoryBreakdown[], seed: number): string {
+  const sorted = [...categories].sort((a, b) => b.delta - a.delta);
+  const best = sorted[0];
+  const worst = sorted[sorted.length - 1];
+
+  if (best.delta >= 1.0 && best.delta >= -worst.delta) {
+    return pick(SG_BETTER[best.category], seed);
+  }
+  if (worst.delta <= -1.0) {
+    return pick(SG_WORSE[worst.category], seed);
+  }
+
+  const spread = best.delta - worst.delta;
+  if (spread < 0.6) return pick(SG_BALANCED, seed);
+  if (best.delta >= 0.6) {
+    return fill(pick(SG_ONE_CARRIES, seed), { category: CATEGORY_PHRASE[best.category] });
+  }
+  if (worst.delta <= -0.6) {
+    return fill(pick(SG_ONE_SINKS, seed), { category: CATEGORY_PHRASE[worst.category] });
+  }
+  return pick(SG_BALANCED, seed);
 }
 
 export function simulateSeason(
@@ -668,17 +789,46 @@ export function simulateSeason(
     (sum, result) => sum + result.earnings,
     0,
   );
+  // Wins banked during the regular season (before any playoff events are
+  // appended to `results`). These drive the win-first recap.
+  const regularSeasonWins = results
+    .filter((result) => result.position === 1)
+    .map((result) => result.event.name);
   let fedExPoints = regularSeasonPoints;
   const regularSeasonRank = regularSeasonRankFromPoints(regularSeasonPoints, seed);
   const madePlayoffs = regularSeasonRank <= 70;
   let liveRank = regularSeasonRank;
+
+  // Secondary signals for the recap copy: how the finishes were shaped beyond
+  // the raw standings rank (top-10 volume, near-misses, missed cuts, best week).
+  const madeCutResults = results.filter((result) => result.madeCut);
+  const bestResult = madeCutResults.reduce<EventResult | undefined>(
+    (best, result) =>
+      !best || result.position < best.position ? result : best,
+    undefined,
+  );
+  const bestFinish = bestResult ? bestResult.position : Number.POSITIVE_INFINITY;
 
   const regularSeason: RegularSeasonSummary = {
     points: Math.round(regularSeasonPoints),
     rank: regularSeasonRank,
     earnings: regularSeasonEarnings,
     madePlayoffs,
-    writeup: regularSeasonWriteup(regularSeasonRank, madePlayoffs),
+    writeup: regularSeasonWriteup(
+      {
+        rank: regularSeasonRank,
+        madePlayoffs,
+        winNames: regularSeasonWins,
+        totalSg,
+        top10Count: madeCutResults.filter((result) => result.position <= 10).length,
+        bestFinish,
+        hasTop3: bestFinish <= 3,
+        hasRunnerUp: madeCutResults.some((result) => result.position === 2),
+        missedCuts: results.filter((result) => !result.madeCut).length,
+        topFinishEvent: bestResult?.event.name,
+      },
+      seed,
+    ),
   };
 
   const playoffStages: PlayoffStageResult[] = [];
@@ -700,14 +850,10 @@ export function simulateSeason(
     const isFinale = playoffIndex === FEDEX_PLAYOFF_SCHEDULE.length - 1;
     const stagePoints = isFinale ? 0 : stage.fedExPoints;
 
-    results.push({
-      event,
-      strokes: stage.weekSg,
-      position: stage.position,
-      madeCut: true,
-      fedExPoints: stagePoints,
-      earnings: stage.earnings,
-    });
+    // Playoff events live in `playoffStages`, not `results`. Each one is only
+    // "played" once the playback reaches its stage, so the season-results table
+    // appends them from there rather than carrying them in the regular-season
+    // list from the start.
     fedExPoints += stagePoints;
 
     const rankBefore = liveRank;
@@ -730,6 +876,7 @@ export function simulateSeason(
       ? liveRank === 1
       : liveRank <= playoffCutoffs[playoffIndex + 1];
 
+    const stageSeed = seed + playoffIndex * 7919;
     playoffStages.push({
       event,
       categories: stage.categories,
@@ -741,19 +888,41 @@ export function simulateSeason(
       rankAfter: liveRank,
       isFinale,
       advanced,
-      writeup: playoffStageWriteup(playoffIndex, isFinale, advanced, liveRank),
+      writeup: playoffStageWriteup(
+        playoffIndex,
+        event.name,
+        isFinale,
+        advanced,
+        rankBefore,
+        liveRank,
+        stage.position === 1,
+        stageSeed,
+      ),
+      sgNote: playoffSgNote(stage.categories, stageSeed),
     });
   });
 
-  const earnings = results.reduce((sum, result) => sum + result.earnings, 0);
-  const madeCuts = results.filter((result) => result.madeCut);
+  // Whole-season totals fold the playoff stages back in: `results` is now the
+  // regular season alone, so earnings and average finish add the played
+  // playoff events explicitly.
+  const earnings =
+    results.reduce((sum, result) => sum + result.earnings, 0) +
+    playoffStages.reduce((sum, stage) => sum + stage.earnings, 0);
+  const madeCutFinishes = results
+    .filter((result) => result.madeCut)
+    .map((result) => result.position);
+  const finishes = [
+    ...madeCutFinishes,
+    ...playoffStages.map((stage) => stage.position),
+  ];
   const averageFinish =
-    madeCuts.length > 0
-      ? madeCuts.reduce((sum, result) => sum + result.position, 0) / madeCuts.length
+    finishes.length > 0
+      ? finishes.reduce((sum, position) => sum + position, 0) / finishes.length
       : 0;
   const status = getSeasonStatus(liveRank, regularSeasonRank);
 
   return {
+    seed,
     totalSg: Number(totalSg.toFixed(2)),
     averageFinish: Number(averageFinish.toFixed(1)),
     fedExPoints: Math.round(fedExPoints),

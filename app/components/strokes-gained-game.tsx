@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
-import { formatCurrency, formatSg, positionLabel, seasonBlurb } from "../lib/format";
+import { formatCurrency, formatSg, positionLabel } from "../lib/format";
 import { CATEGORY_META, CATEGORY_ORDER } from "../lib/game/categories";
 import {
   buildSeed,
@@ -16,12 +16,23 @@ import { simulateSeason } from "../lib/game/simulation";
 import type {
   CategoryBreakdown,
   CategoryKey,
+  EventKind,
   PlayerSeason,
   PlayoffStageResult,
   RegularSeasonSummary,
   SeasonSimulation,
   SlotAssignment,
 } from "../lib/game/types";
+
+// Notable Finishes are ordered by championship prestige: majors first, then THE
+// PLAYERS, the FedEx Cup Playoffs, Signature Events, and finally regular events.
+const EVENT_KIND_PRIORITY: Record<EventKind, number> = {
+  major: 0,
+  players: 1,
+  playoff: 2,
+  signature: 3,
+  regular: 4,
+};
 
 const SEASONS = rawSeasons as PlayerSeason[];
 const PLAYER_GROUPS = SEASONS.reduce((groups, season) => {
@@ -37,7 +48,7 @@ const AVAILABLE_YEARS = Array.from(new Set(SEASONS.map((season) => season.year))
 const LATEST_YEAR = AVAILABLE_YEARS[0];
 
 const ZONE_META: Record<CategoryKey, { className: string; label: string }> = {
-  offTee: { className: "zone--driving", label: "Driving" },
+  offTee: { className: "zone--driving", label: "Off the Tee" },
   approach: { className: "zone--approach", label: "Approach" },
   aroundGreen: { className: "zone--around-green", label: "Around the Green" },
   putting: { className: "zone--putting", label: "Putting" },
@@ -47,6 +58,37 @@ type SpinPhase = "player" | "year" | "ready";
 type YearMode = "current" | "all" | "filter";
 type StatsMode = "blind" | "show";
 type FieldMode = "entire" | "notables";
+
+const STATS_MODE_LABEL: Record<StatsMode, string> = {
+  blind: "Blind",
+  show: "Show Stats",
+};
+
+const FIELD_MODE_LABEL: Record<FieldMode, string> = {
+  entire: "Entire Field",
+  notables: "Notables",
+};
+
+function yearModeLabel(yearMode: YearMode, selectedYears: number[]) {
+  if (yearMode === "all") return "All Time";
+  if (yearMode === "current") return `${LATEST_YEAR} Season`;
+  return [...selectedYears].sort((a, b) => b - a).join(", ") || "Custom Years";
+}
+
+// The three chips that describe the game mode a run was played under — surfaced
+// in the shareable season recap so a screenshot carries the full context.
+function buildModeChips(
+  statsMode: StatsMode,
+  yearMode: YearMode,
+  fieldMode: FieldMode,
+  selectedYears: number[],
+) {
+  return [
+    STATS_MODE_LABEL[statsMode],
+    yearModeLabel(yearMode, selectedYears),
+    FIELD_MODE_LABEL[fieldMode],
+  ];
+}
 
 // Gently pull a freshly-revealed block/CTA into view so you don't have to
 // realise there's a next thing and scroll to it yourself. Runs on every
@@ -230,6 +272,29 @@ function GameModeChooser({
   );
 }
 
+// One-sentence explainer for why a playoff week's strokes gained can look
+// strong yet still finish mid-pack — the SG scale is the same as the
+// season-long stats; only the field got tougher.
+const TRUE_SG_EXPLAINER =
+  'These are "true" strokes gained — measured against the average PGA Tour field, the same scale as the season-long stats — so a strong number can still finish mid-pack against a stacked playoff field.';
+
+// A small "ⓘ"-style hint that reveals its explainer on hover or keyboard focus.
+// Pure CSS bubble; the trigger is focusable and the bubble is the accessible
+// tooltip so it works without a pointer.
+function InfoHint({ label, children }: { label: string; children: string }) {
+  return (
+    <span className="info-hint" tabIndex={0} role="note" aria-label={`${label}: ${children}`}>
+      <span className="info-hint__label">{label}</span>
+      <span className="info-hint__icon" aria-hidden="true">
+        i
+      </span>
+      <span className="info-hint__bubble" aria-hidden="true">
+        {children}
+      </span>
+    </span>
+  );
+}
+
 function SiteFooter() {
   return (
     <footer className="site-footer">
@@ -282,7 +347,7 @@ function StatList({
   season,
   idealCategory,
 }: {
-  season: PlayerSeason;
+  season?: PlayerSeason;
   idealCategory?: CategoryKey;
 }) {
   return (
@@ -295,7 +360,7 @@ function StatList({
               {CATEGORY_META[category].statLabel}
               {isIdeal ? <span className="stat-row__ideal-tag">Ideal</span> : null}
             </span>
-            <strong>{formatSg(season.sg[category])}</strong>
+            <strong>{season ? formatSg(season.sg[category]) : "—"}</strong>
           </div>
         );
       })}
@@ -328,23 +393,23 @@ function ZoneSlot({
       >
         <span className="course-zone__head">
           <span className="course-zone__label">{zone.label}</span>
-          <span className="course-zone__state">Locked</span>
+          <button
+            type="button"
+            className="mulligan-button"
+            onClick={() => onMulligan(category)}
+            aria-label={`Mulligan ${zone.label} — drop ${assignment.season.player} and respin`}
+          >
+            Mulligan
+          </button>
         </span>
 
         <span className="course-zone__player">
           <strong>{assignment.season.player}</strong>
-          <span>{assignment.season.year}</span>
-          <em className={selectedValue < 0 ? "negative" : ""}>{formatSg(selectedValue)}</em>
+          <span className="course-zone__meta">
+            <span>{assignment.season.year}</span>
+            <em className={selectedValue < 0 ? "negative" : ""}>{formatSg(selectedValue)}</em>
+          </span>
         </span>
-
-        <button
-          type="button"
-          className="mulligan-button"
-          onClick={() => onMulligan(category)}
-          aria-label={`Mulligan ${zone.label} — drop ${assignment.season.player} and respin`}
-        >
-          Mulligan
-        </button>
       </div>
     );
   }
@@ -412,7 +477,7 @@ function CourseBoard({
         <img src="/Golf Game Drawing.webp" alt="" className="course-board__image" />
       </div>
       <div className="course-zone-rail">
-        {[...CATEGORY_ORDER].reverse().map((category) => (
+        {CATEGORY_ORDER.map((category) => (
           <ZoneSlot
             key={category}
             category={category}
@@ -491,14 +556,12 @@ function SpinningStat({
 
 function PlayoffStageBlock({
   stage,
-  eventNumber,
   isCurrent,
   continueLabel,
   blockRef,
   onContinue,
 }: {
   stage: PlayoffStageResult;
-  eventNumber: number;
   isCurrent: boolean;
   continueLabel: string;
   blockRef?: (node: HTMLElement | null) => void;
@@ -524,10 +587,12 @@ function PlayoffStageBlock({
 
   return (
     <section className="playoff-block" aria-label={stage.event.name} ref={blockRef}>
-      <div className="playoff-block__head">
-        <span className="eyebrow">Playoff Event {eventNumber} of 3</span>
+      <div className="playoff-block__head playoff-block__head--event">
         <h3>{stage.event.name}</h3>
-        <span className="playoff-block__seed">Enter as No. {stage.rankBefore}</span>
+      </div>
+
+      <div className="playoff-stat-rail__caption">
+        <InfoHint label="True Strokes Gained">{TRUE_SG_EXPLAINER}</InfoHint>
       </div>
 
       <div className="playoff-stat-rail">
@@ -577,6 +642,7 @@ function PlayoffStageBlock({
             <span className="eyebrow">{stage.writeup.label}</span>
             <h4>{stage.writeup.headline}</h4>
             <p>{stage.writeup.detail}</p>
+            {stage.sgNote ? <p className="playoff-writeup__note">{stage.sgNote}</p> : null}
           </div>
           {isCurrent ? (
             <button
@@ -637,65 +703,216 @@ function RegularSeasonBlock({
 
 function FinalBlock({
   simulation,
+  assignments,
+  mulligans,
+  modeChips,
   blockRef,
   onNewRound,
 }: {
   simulation: SeasonSimulation;
+  assignments: SlotAssignment[];
+  mulligans: number;
+  modeChips: string[];
   blockRef?: (node: HTMLElement | null) => void;
   onNewRound: () => void;
 }) {
-  const wins = simulation.results.filter((result) => result.position === 1);
-  const [eventsOpen, setEventsOpen] = useState(false);
+  // Wins span the whole season: regular-season events plus any playoff-event
+  // wins, which now live in `playoffStages` rather than `results`.
+  const wins = [
+    ...simulation.results.filter((result) => result.position === 1),
+    ...simulation.playoffStages.filter((stage) => stage.position === 1),
+  ];
+
+  // The player combo, ordered by course zone (Putting → Off the Tee) with the
+  // strokes gained that player posted in the category they were slotted into.
+  const lineup = CATEGORY_ORDER.map((category) => ({
+    category,
+    season: assignments.find((assignment) => assignment.category === category)?.season,
+  }));
+
+  // Notable Finishes: every win first, then every top-5 finish, each group
+  // ordered by event prestige (majors → players → playoffs → signature →
+  // regular). Playoff events sit alongside the regular season here.
+  const finishes = [
+    ...simulation.results
+      .filter((result) => result.madeCut)
+      .map((result) => ({
+        id: result.event.id,
+        name: result.event.name,
+        kind: result.event.kind,
+        position: result.position,
+      })),
+    ...simulation.playoffStages.map((stage) => ({
+      id: stage.event.id,
+      name: stage.event.name,
+      kind: stage.event.kind,
+      position: stage.position,
+    })),
+  ];
+  const byPrestige = (a: { kind: EventKind; position: number }, b: typeof a) =>
+    EVENT_KIND_PRIORITY[a.kind] - EVENT_KIND_PRIORITY[b.kind] || a.position - b.position;
+  const notableFinishes = [
+    ...finishes.filter((finish) => finish.position === 1).sort(byPrestige),
+    ...finishes.filter((finish) => finish.position >= 2 && finish.position <= 5).sort(byPrestige),
+  ];
+
+  const [copied, setCopied] = useState(false);
+  const [canNativeShare, setCanNativeShare] = useState(false);
+
+  useEffect(() => {
+    setCanNativeShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
+  }, []);
+
+  // A plain-text version of the recap so a run can be pasted anywhere (group
+  // chats, notes) as well as screenshotted. Mirrors the on-screen content.
+  const buildShareText = useCallback(() => {
+    const lines = [
+      "⛳ Strokes Game — Season Recap",
+      `🏆 FedEx Cup: No. ${simulation.fedExRank}`,
+      `💰 On Course Earnings: ${formatCurrency(simulation.earnings)}`,
+      `🥇 Wins: ${wins.length}`,
+      `🔁 Mulligans: ${mulligans}`,
+      "",
+      `Mode: ${modeChips.join(" · ")}`,
+      "",
+      "Lineup:",
+      ...lineup.map(
+        (slot) =>
+          `• ${CATEGORY_META[slot.category].statLabel}: ${
+            slot.season
+              ? `${slot.season.player}, ${slot.season.year}, ${formatSg(slot.season.sg[slot.category])}`
+              : "—"
+          }`,
+      ),
+      `Total Strokes Gained: ${formatSg(simulation.totalSg)}`,
+    ];
+    if (notableFinishes.length > 0) {
+      lines.push(
+        "",
+        "Notable Finishes:",
+        ...notableFinishes.map((finish) => `• ${positionLabel(finish.position)} — ${finish.name}`),
+      );
+    }
+    if (typeof window !== "undefined") {
+      lines.push("", window.location.origin);
+    }
+    return lines.join("\n");
+  }, [
+    lineup,
+    modeChips,
+    mulligans,
+    notableFinishes,
+    simulation.earnings,
+    simulation.fedExRank,
+    simulation.totalSg,
+    wins.length,
+  ]);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(buildShareText());
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 2200);
+    } catch {
+      // Clipboard can be blocked (permissions, insecure context) — fail quietly.
+    }
+  }, [buildShareText]);
+
+  const handleShare = useCallback(async () => {
+    const text = buildShareText();
+    try {
+      await navigator.share({ title: "Strokes Game — Season Recap", text });
+    } catch {
+      // User dismissed the share sheet, or it isn't available — no-op.
+    }
+  }, [buildShareText]);
 
   return (
     <section
       className="playoff-block playoff-block--final"
-      aria-label="Final standings"
+      aria-label="Season recap"
       ref={blockRef}
     >
-      <div className="fedex-bar fedex-bar--final">
+      {/* Top box — every headline stat in the split-cell format. */}
+      <div className="fedex-bar fedex-bar--final fedex-bar--quad">
         <div>
           <span className="eyebrow">FedEx Cup Position</span>
           <strong>No. {simulation.fedExRank}</strong>
         </div>
         <div>
-          <span className="eyebrow">Season Earnings</span>
+          <span className="eyebrow">On Course Earnings</span>
           <strong>{formatCurrency(simulation.earnings)}</strong>
-        </div>
-      </div>
-      <div className="playoff-block__head">
-        <span className="eyebrow">{simulation.status.label}</span>
-        <h3>{simulation.status.headline}</h3>
-      </div>
-      <p className="playoff-block__detail">{simulation.status.detail}</p>
-      <p className="playoff-block__detail">{seasonBlurb(simulation)}</p>
-
-      <div className="playoff-summary__grid playoff-summary__grid--final">
-        <div>
-          <span className="eyebrow">Final FedEx</span>
-          <strong>No. {simulation.fedExRank}</strong>
         </div>
         <div>
           <span className="eyebrow">Wins</span>
           <strong>{wins.length}</strong>
         </div>
         <div>
-          <span className="eyebrow">Total Earnings</span>
-          <strong>{formatCurrency(simulation.earnings)}</strong>
-        </div>
-        <div>
-          <span className="eyebrow">FedEx Tier</span>
-          <strong className="playoff-summary__tier">{simulation.status.tier}</strong>
+          <span className="eyebrow">Mulligans</span>
+          <strong>{mulligans}</strong>
         </div>
       </div>
 
-      {wins.length > 0 ? (
-        <div className="wins-strip" aria-label="Wins">
-          {wins.map((result) => (
-            <span key={result.event.id}>{result.event.name}</span>
-          ))}
+      <div className="recap-mode">
+        <span className="recap-mode__label">Game Mode</span>
+        <span className="recap-mode__value">{modeChips.join(" · ")}</span>
+      </div>
+
+      {/* Four quadrants — the lineup with each player's category performance,
+          then a merged total-strokes-gained row along the bottom. */}
+      <div className="recap-lineup-grid" aria-label="Your lineup">
+        {lineup.map((slot) => {
+          const value = slot.season?.sg[slot.category];
+          return (
+            <div className="recap-lineup-cell" key={slot.category}>
+              <span className="recap-lineup-cat">{CATEGORY_META[slot.category].statLabel}</span>
+              <div className="recap-lineup-line">
+                <span className="recap-lineup-player">
+                  {slot.season ? `${slot.season.player}, ${slot.season.year}` : "—"}
+                </span>
+                <span className={`recap-lineup-val ${value !== undefined && value < 0 ? "is-negative" : ""}`}>
+                  {value !== undefined ? formatSg(value) : "—"}
+                </span>
+              </div>
+            </div>
+          );
+        })}
+        <div className="recap-lineup-total">
+          Total Strokes Gained:{" "}
+          <span className={simulation.totalSg < 0 ? "is-negative" : ""}>
+            {formatSg(simulation.totalSg)}
+          </span>
         </div>
-      ) : null}
+      </div>
+
+      <div className="notable-finishes">
+        <span className="notable-finishes__title">Notable Finishes</span>
+        {notableFinishes.length > 0 ? (
+          <ul>
+            {notableFinishes.map((finish) => (
+              <li key={finish.id} className={finish.position === 1 ? "is-win" : ""}>
+                <span className="notable-finishes__pos">{positionLabel(finish.position)}</span>
+                <span className="notable-finishes__event">{finish.name}</span>
+                <span className="pill">{finish.kind}</span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="notable-finishes__empty">No top-5 finishes this season.</p>
+        )}
+      </div>
+
+      <div className="recap-actions">
+        <button type="button" className="primary-button" onClick={handleCopy}>
+          {copied ? "Copied!" : "Copy Recap"}
+        </button>
+        {canNativeShare ? (
+          <button type="button" className="ghost-button" onClick={handleShare}>
+            Share
+          </button>
+        ) : null}
+        <span className="recap-actions__hint">Screenshot this recap to share it anywhere.</span>
+      </div>
 
       <button type="button" className="primary-button playoff-block__reset" onClick={onNewRound}>
         New Round
@@ -704,8 +921,29 @@ function FinalBlock({
   );
 }
 
-function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
+function TournamentLog({
+  simulation,
+  revealedPlayoffCount,
+}: {
+  simulation: SeasonSimulation;
+  revealedPlayoffCount: number;
+}) {
   const [eventsOpen, setEventsOpen] = useState(false);
+
+  // `simulation.results` is the regular season only. Playoff events are played
+  // one stage at a time, so append just the stages the playback has reached —
+  // nothing about them exists in the table before we get there.
+  const visibleResults = [
+    ...simulation.results,
+    ...simulation.playoffStages.slice(0, revealedPlayoffCount).map((stage) => ({
+      event: stage.event,
+      strokes: stage.weekSg,
+      position: stage.position,
+      madeCut: true,
+      fedExPoints: stage.fedExPoints,
+      earnings: stage.earnings,
+    })),
+  ];
 
   return (
     <div className="event-accordion event-accordion--standalone">
@@ -715,7 +953,7 @@ function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
         onClick={() => setEventsOpen((open) => !open)}
         aria-expanded={eventsOpen}
       >
-        <span>Full Season Results</span>
+        <span>Season Results</span>
         <span>{eventsOpen ? "Hide" : "Show"}</span>
       </button>
 
@@ -732,7 +970,7 @@ function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
             </tr>
           </thead>
           <tbody>
-            {simulation.results.map((result) => (
+            {visibleResults.map((result) => (
               <tr
                 key={result.event.id}
                 className={
@@ -760,19 +998,106 @@ function TournamentLog({ simulation }: { simulation: SeasonSimulation }) {
   );
 }
 
+// The Tour Championship finale still gets its strokes-gained sim run on screen —
+// the four category reels spin and settle exactly like the other playoff events
+// — but instead of its own finish/earnings recap and continue button, it tallies
+// for a beat and then hands off to the full season recap automatically.
+function FinaleSimBlock({
+  stage,
+  isCurrent,
+  blockRef,
+  onSettled,
+}: {
+  stage: PlayoffStageResult;
+  isCurrent: boolean;
+  blockRef?: (node: HTMLElement | null) => void;
+  onSettled: () => void;
+}) {
+  const [settledCount, setSettledCount] = useState(0);
+  const order = CATEGORY_ORDER;
+  const revealCount = Math.min(settledCount + 1, order.length);
+  const summaryReady = settledCount >= order.length;
+  const advancedRef = useRef(false);
+  const settledCallback = useRef(onSettled);
+  settledCallback.current = onSettled;
+
+  const byCategory = useMemo(
+    () => new Map(stage.categories.map((item) => [item.category, item])),
+    [stage],
+  );
+
+  useEffect(() => {
+    if (!summaryReady || !isCurrent || advancedRef.current) return;
+    advancedRef.current = true;
+    const timer = window.setTimeout(() => settledCallback.current(), 1100);
+    return () => window.clearTimeout(timer);
+  }, [summaryReady, isCurrent]);
+
+  return (
+    <section className="playoff-block" aria-label={stage.event.name} ref={blockRef}>
+      <div className="playoff-block__head playoff-block__head--event">
+        <h3>{stage.event.name}</h3>
+      </div>
+
+      <div className="playoff-stat-rail__caption">
+        <InfoHint label="True Strokes Gained">{TRUE_SG_EXPLAINER}</InfoHint>
+      </div>
+
+      <div className="playoff-stat-rail">
+        {order.map((category, index) => {
+          if (index < revealCount) {
+            return (
+              <SpinningStat
+                key={category}
+                breakdown={byCategory.get(category)!}
+                onSettled={() => setSettledCount((count) => count + 1)}
+              />
+            );
+          }
+          return (
+            <div className="playoff-stat playoff-stat--idle" key={category}>
+              <span className="eyebrow">{CATEGORY_META[category].shortLabel}</span>
+              <strong className="playoff-stat__value">--</strong>
+              <span className="playoff-stat__meta">on deck</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {summaryReady && isCurrent ? (
+        <p className="playoff-block__detail">Tallying the final standings…</p>
+      ) : null}
+    </section>
+  );
+}
+
 function SeasonPlayback({
   simulation,
+  assignments,
+  mulligans,
+  modeChips,
   onNewRound,
 }: {
   simulation: SeasonSimulation;
+  assignments: SlotAssignment[];
+  mulligans: number;
+  modeChips: string[];
   onNewRound: () => void;
 }) {
   const stages = simulation.playoffStages;
-  // step 0 = regular season; 1..stages.length = playoff events; stages.length+1
-  // = final standings. Blocks with index <= step are revealed; the newest one
-  // runs its spin animation and owns the "Continue" button.
+  // East Lake's tournament recap is skipped, but its strokes-gained sim still
+  // runs on screen (FinaleSimBlock) before handing off to the season recap. The
+  // playoff recap blocks (with their own finish/earnings + continue button) are
+  // every stage except the finale.
+  const hasFinale = stages.length > 0 && stages[stages.length - 1].isFinale;
+  const recapStages = hasFinale ? stages.slice(0, -1) : stages;
+  const finaleStage = hasFinale ? stages[stages.length - 1] : undefined;
+  // step 0 = regular season; 1..recapStages.length = playoff recap blocks; then
+  // (if the run reached East Lake) the finale sim at finaleStep, and finally the
+  // season recap at finalStep. Blocks with index <= step are revealed.
   const [step, setStep] = useState(0);
-  const finalStep = stages.length + 1;
+  const finaleStep = hasFinale ? recapStages.length + 1 : 0;
+  const finalStep = recapStages.length + (hasFinale ? 2 : 1);
 
   // Tracks the block that just became current, so we can scroll to it on mobile.
   // Ignore the detach call (null) so the newly-mounted block wins the race.
@@ -802,9 +1127,16 @@ function SeasonPlayback({
   const advance = useCallback(() => setStep((value) => value + 1), []);
 
   const continueLabelFor = (index: number) => {
-    const stage = stages[index];
-    if (stage.isFinale || !stage.advanced) return "See the final standings";
-    return `On to the ${stages[index + 1].event.name}`;
+    const stage = recapStages[index];
+    if (stage.advanced && index < recapStages.length - 1) {
+      return `On to the ${recapStages[index + 1].event.name}`;
+    }
+    // Advancing past the last recap block means East Lake is next — its sim runs
+    // before the standings. An eliminated run instead jumps to the recap.
+    if (stage.advanced && finaleStage) {
+      return `On to the ${finaleStage.event.name}`;
+    }
+    return "See your season recap";
   };
 
   return (
@@ -816,14 +1148,18 @@ function SeasonPlayback({
           onContinue={advance}
         />
 
-        <TournamentLog simulation={simulation} />
+        <TournamentLog
+          simulation={simulation}
+          revealedPlayoffCount={
+            step >= finalStep ? stages.length : Math.min(step, recapStages.length)
+          }
+        />
 
-        {stages.map((stage, index) =>
+        {recapStages.map((stage, index) =>
           step >= index + 1 ? (
             <PlayoffStageBlock
               key={stage.event.id}
               stage={stage}
-              eventNumber={index + 1}
               isCurrent={step === index + 1}
               continueLabel={continueLabelFor(index)}
               blockRef={step === index + 1 ? setCurrentRef : undefined}
@@ -832,8 +1168,24 @@ function SeasonPlayback({
           ) : null,
         )}
 
+        {finaleStage && step >= finaleStep ? (
+          <FinaleSimBlock
+            stage={finaleStage}
+            isCurrent={step === finaleStep}
+            blockRef={step === finaleStep ? setCurrentRef : undefined}
+            onSettled={advance}
+          />
+        ) : null}
+
         {step >= finalStep ? (
-          <FinalBlock simulation={simulation} blockRef={setCurrentRef} onNewRound={onNewRound} />
+          <FinalBlock
+            simulation={simulation}
+            assignments={assignments}
+            mulligans={mulligans}
+            modeChips={modeChips}
+            blockRef={setCurrentRef}
+            onNewRound={onNewRound}
+          />
         ) : null}
       </div>
     </section>
@@ -948,11 +1300,14 @@ export function StrokesGainedGame() {
   );
 
   useEffect(() => {
+    // Hold off on the reels until a game mode is picked — no spinning behind the
+    // chooser on first open.
+    if (!gameModeChosen) return;
     setAssignments([]);
     setMulligans(0);
     startSpin(new Set());
     return clearSpinTimers;
-  }, [clearSpinTimers, selectedYears, startSpin, yearMode]);
+  }, [clearSpinTimers, gameModeChosen, selectedYears, startSpin, yearMode]);
 
   const handleYearModeChange = (nextMode: YearMode) => {
     setYearMode(nextMode);
@@ -1038,12 +1393,9 @@ export function StrokesGainedGame() {
             showYear={yearMode !== "current"}
           />
 
-          {statsMode === "show" && currentSeason && phase === "ready" && !complete ? (
+          {statsMode === "show" && !complete ? (
             <div className="stat-reveal" aria-label="Current player stats">
-              <span className="eyebrow">
-                On the Clock — {currentSeason.player} {currentSeason.year}
-              </span>
-              <StatList season={currentSeason} />
+              <StatList season={phase === "ready" ? currentSeason : undefined} />
             </div>
           ) : null}
 
@@ -1075,7 +1427,13 @@ export function StrokesGainedGame() {
 
       {simulation ? (
         <>
-          <SeasonPlayback simulation={simulation} onNewRound={resetGame} />
+          <SeasonPlayback
+            simulation={simulation}
+            assignments={assignments}
+            mulligans={mulligans}
+            modeChips={buildModeChips(statsMode, yearMode, fieldMode, selectedYears)}
+            onNewRound={resetGame}
+          />
           <AssignmentStats assignments={assignments} />
         </>
       ) : null}
