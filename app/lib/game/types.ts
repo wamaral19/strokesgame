@@ -60,6 +60,7 @@ export type RegularSeasonSummary = {
   points: number;
   rank: number;
   earnings: number;
+  wins: number;
   madePlayoffs: boolean;
   writeup: StageWriteup;
 };

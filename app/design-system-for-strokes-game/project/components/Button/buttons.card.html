@@ -1,0 +1,25 @@
+<!-- @dsCard group="Components" viewport="700x120" name="Buttons" subtitle="Primary · Secondary · Ghost · disabled" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); padding: 24px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-family: var(--font-ui); }
+  .btn { font-family: var(--font-ui); font-size: var(--text-2xs); font-weight: var(--weight-bold); letter-spacing: var(--tracking-label); text-transform: uppercase; border-radius: var(--radius-pill); padding: 10px 22px; cursor: pointer; line-height: 1; white-space: nowrap; transition: opacity 120ms; }
+  .primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); border: none; }
+  .secondary { background: transparent; color: var(--btn-secondary-text); border: 1.5px solid var(--btn-secondary-border); }
+  .ghost { background: transparent; color: var(--text-secondary); border: none; padding: 10px 12px; }
+  .disabled { opacity: 0.4; cursor: not-allowed; }
+  .divider { width: 1px; height: 32px; background: var(--border-default); }
+</style>
+</head>
+<body>
+  <button class="btn primary">New Round</button>
+  <button class="btn primary">Copy Recap</button>
+  <button class="btn secondary">Share</button>
+  <button class="btn ghost">Cancel</button>
+  <div class="divider"></div>
+  <button class="btn primary disabled" disabled>Disabled</button>
+  <button class="btn secondary disabled" disabled>Disabled</button>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!-- @dsCard group="Components" viewport="700x100" name="Stat Banner" subtitle="Dark green header strip" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-banner); font-family: var(--font-ui); }
+  .banner { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; }
+  .cell { padding: 16px 24px; border-left: 1px solid rgba(255,255,255,0.12); }
+  .cell:first-child { border-left: none; }
+  .eyebrow { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-on-dark-dim); margin-bottom: 6px; }
+  .value { font-family: var(--font-display); font-size: var(--text-xl); font-weight: var(--weight-bold); letter-spacing: var(--tracking-tight); color: var(--text-on-dark); line-height: 1; }
+</style>
+</head>
+<body>
+  <div class="banner">
+    <div class="cell"><div class="eyebrow">FedEx Cup Position</div><div class="value">No. 27</div></div>
+    <div class="cell"><div class="eyebrow">On Course Earnings</div><div class="value">$7,216,000</div></div>
+    <div class="cell"><div class="eyebrow">Wins</div><div class="value">0</div></div>
+    <div class="cell"><div class="eyebrow">Mulligans</div><div class="value">0</div></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,36 @@
+<!-- @dsCard group="Type" viewport="700x200" name="Font Families" subtitle="Playfair Display + DM Sans" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); padding: 20px; display: flex; gap: 32px; }
+  .col { flex: 1; }
+  .tag { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; font-family: var(--font-ui); }
+  .specimen-display { font-family: var(--font-display); font-size: 36px; font-weight: var(--weight-bold); line-height: var(--leading-tight); color: var(--text-primary); letter-spacing: var(--tracking-tight); }
+  .specimen-ui { font-family: var(--font-ui); font-size: 22px; font-weight: var(--weight-medium); line-height: var(--leading-snug); color: var(--text-primary); }
+  .sub { font-size: 11px; color: var(--text-muted); font-family: var(--font-ui); margin-top: 8px; }
+  .rule { font-size: 10px; color: var(--text-secondary); font-family: var(--font-ui); font-weight: 500; margin-top: 4px; }
+  .divider { width: 1px; background: var(--border-default); }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="tag">Display — Playfair Display</div>
+    <div class="specimen-display">+2.28</div>
+    <div class="specimen-display" style="font-size:22px; margin-top:4px">FedEx St. Jude Championship</div>
+    <div class="specimen-display" style="font-size:17px; margin-top:4px">Tom Kite</div>
+    <div class="sub">Used for: hero stats · tournament headlines · player name features</div>
+    <div class="rule">Weights: 600 · 700 · 800 · italic 400</div>
+  </div>
+  <div class="divider"></div>
+  <div class="col">
+    <div class="tag">UI — DM Sans</div>
+    <div class="specimen-ui" style="text-transform:uppercase; letter-spacing: var(--tracking-label); font-size:10px; font-weight:700; color:var(--text-secondary)">FEDEX CUP POSITION</div>
+    <div class="specimen-ui" style="margin-top:4px; font-size:15px">Round one is handled. Now the season gets sharper, and so does the math.</div>
+    <div class="specimen-ui" style="margin-top:6px; font-size:10px; font-weight:700; letter-spacing:var(--tracking-label); text-transform:uppercase; background:var(--color-ink-900); color:var(--color-cream-50); display:inline-block; padding:6px 16px; border-radius:999px">NEW ROUND</div>
+    <div class="sub">Used for: labels · body · buttons · badges · all UI chrome</div>
+    <div class="rule">Weights: 400 · 500 · 600 · 700 · italic 400</div>
+  </div>
+</body>
+</html>

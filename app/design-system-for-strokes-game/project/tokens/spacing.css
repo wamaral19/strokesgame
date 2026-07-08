@@ -1,0 +1,40 @@
+:root {
+  /* ─── Base Scale (4px base) ─────────────────────── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* ─── Semantic Spacing ──────────────────────────── */
+  --gap-xs:   var(--space-1);   /* tight icon-label gap */
+  --gap-sm:   var(--space-2);   /* inline element gap */
+  --gap-md:   var(--space-4);   /* card internal gap */
+  --gap-lg:   var(--space-6);   /* section gap */
+  --gap-xl:   var(--space-8);   /* page section gap */
+
+  --pad-card:    var(--space-4) var(--space-5);   /* 16px 20px */
+  --pad-card-lg: var(--space-5) var(--space-6);   /* 20px 24px */
+  --pad-banner:  var(--space-4) var(--space-6);   /* banner cell */
+  --pad-row:     var(--space-3) var(--space-5);   /* list row */
+  --pad-btn:     var(--space-2) var(--space-5);   /* button */
+  --pad-page:    var(--space-5);                  /* page edge */
+
+  /* ─── Border Radius ─────────────────────────────── */
+  --radius-sm:   4px;   /* badges, chips */
+  --radius-md:   8px;   /* cards, inputs */
+  --radius-pill: 999px; /* buttons, tags */
+
+  /* ─── Border Width ──────────────────────────────── */
+  --border-width: 1px;
+
+  /* ─── Shadows ────────────────────────────────────── */
+  /* This UI is essentially shadow-free; borders define structure */
+  --shadow-none: none;
+}

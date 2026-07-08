@@ -198,13 +198,11 @@ function GameModeChooser({
             <ModeOption
               active={statsMode === "blind"}
               title="Blind"
-              hint="See only the name until you lock them in."
               onSelect={() => onStatsMode("blind")}
             />
             <ModeOption
               active={statsMode === "show"}
               title="Show Stats"
-              hint="See the strokes gained before you place them."
               onSelect={() => onStatsMode("show")}
             />
           </div>
@@ -248,6 +246,7 @@ function GameModeChooser({
 
         <fieldset className="mode-group">
           <legend>Field</legend>
+          <p className="mode-group__hint">Names the casual fan would recognize.</p>
           <div className="mode-options">
             <ModeOption
               active={fieldMode === "entire"}
@@ -675,7 +674,7 @@ function RegularSeasonBlock({
         <span className="eyebrow">{summary.writeup.label}</span>
         <h3>{summary.writeup.headline}</h3>
       </div>
-      <div className="playoff-summary__grid playoff-summary__grid--trio">
+      <div className="playoff-summary__grid">
         <div>
           <span className="eyebrow">FedEx Points</span>
           <strong>{summary.points.toLocaleString()}</strong>
@@ -683,6 +682,10 @@ function RegularSeasonBlock({
         <div>
           <span className="eyebrow">Regular-Season Rank</span>
           <strong>No. {summary.rank}</strong>
+        </div>
+        <div>
+          <span className="eyebrow">Wins</span>
+          <strong>{summary.wins}</strong>
         </div>
         <div>
           <span className="eyebrow">Earned</span>

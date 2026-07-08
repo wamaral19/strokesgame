@@ -1,0 +1,244 @@
+<!-- @startingPoint section="Screens" subtitle="Tournament result — SG cards, finish, narrative" viewport="900x640" -->
+<!-- @dsCard group="UI Kit" viewport="900x640" name="Tournament Result" subtitle="SG cards · result grid · narrative block" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<title>Tournament Result — Strokes Game</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-page);
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  .page { padding: 24px 28px; display: flex; flex-direction: column; gap: 20px; max-width: 900px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 16px;
+  }
+  .header-pre {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .header-title {
+    font-family: var(--font-display);
+    font-size: 48px;
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
+    line-height: 1;
+    flex: 1;
+  }
+  .header-pos {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    align-self: center;
+  }
+
+  /* Section label */
+  .section-label {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .info-icon {
+    width: 14px; height: 14px;
+    border: 1.5px solid var(--text-muted);
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 9px; color: var(--text-muted); font-style: italic;
+    font-family: Georgia, serif;
+    line-height: 1;
+  }
+
+  /* SG cards */
+  .sg-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 8px;
+  }
+  .sg-card {
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .sg-pos { background: var(--bg-positive); border: 1px solid var(--color-green-700); }
+  .sg-neg { background: var(--bg-negative); border: 1px solid var(--color-red-100); }
+  .sg-cat {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    opacity: 0.75;
+  }
+  .sg-pos .sg-cat { color: var(--text-positive); }
+  .sg-neg .sg-cat { color: var(--text-negative); }
+  .sg-val {
+    font-family: var(--font-display);
+    font-size: 38px;
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
+    line-height: 1;
+  }
+  .sg-pos .sg-val { color: var(--text-positive); }
+  .sg-neg .sg-val { color: var(--text-negative); }
+  .sg-avg { font-size: var(--text-xs); opacity: 0.7; }
+  .sg-pos .sg-avg { color: var(--text-positive); }
+  .sg-neg .sg-avg { color: var(--text-negative); }
+
+  /* Result grid */
+  .result-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--bg-surface);
+  }
+  .result-cell {
+    padding: 14px 20px;
+    border-right: 1px solid var(--border-default);
+  }
+  .result-cell:last-child { border-right: none; }
+  .result-label {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+  }
+  .result-value {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  /* Narrative */
+  .narrative {
+    border-left: 3px solid var(--color-green-700);
+    padding: 4px 0 4px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .narrative-context {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .narrative-headline {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: var(--weight-bold);
+    color: var(--text-primary);
+    line-height: var(--leading-snug);
+  }
+  .narrative-body {
+    font-size: var(--text-base);
+    color: var(--text-secondary);
+    line-height: var(--leading-base);
+  }
+  .narrative-quote {
+    font-size: var(--text-base);
+    font-style: italic;
+    color: var(--text-secondary);
+    line-height: var(--leading-base);
+  }
+
+  .btn {
+    font-family: var(--font-ui);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    border-radius: var(--radius-pill);
+    padding: 10px 22px;
+    cursor: pointer;
+    line-height: 1;
+    white-space: nowrap;
+    transition: opacity 120ms;
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border: none;
+    display: inline-block;
+  }
+  .btn:hover { opacity: 0.78; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-pre">Playoff Event 1 of 3</div>
+    <div class="header-title">FedEx St. Jude Championship</div>
+    <div class="header-pos">Enter as No. 9</div>
+  </div>
+
+  <!-- SG Cards -->
+  <div>
+    <div class="section-label">True Strokes Gained <span class="info-icon">i</span></div>
+    <div class="sg-grid">
+      <div class="sg-card sg-neg"><div class="sg-cat">Putt</div><div class="sg-val">+0.23</div><div class="sg-avg">AVG +0.36 · −0.13</div></div>
+      <div class="sg-card sg-neg"><div class="sg-cat">ARG</div><div class="sg-val">−0.08</div><div class="sg-avg">AVG −0.05 · −0.03</div></div>
+      <div class="sg-card sg-pos"><div class="sg-cat">APP</div><div class="sg-val">+2.28</div><div class="sg-avg">AVG +0.70 · +1.58</div></div>
+      <div class="sg-card sg-pos"><div class="sg-cat">OTT</div><div class="sg-val">+0.80</div><div class="sg-avg">AVG +0.16 · +0.64</div></div>
+    </div>
+  </div>
+
+  <!-- Result grid -->
+  <div class="result-grid">
+    <div class="result-cell"><div class="result-label">Finish</div><div class="result-value">T5</div></div>
+    <div class="result-cell"><div class="result-label">FedEx Points</div><div class="result-value">440</div></div>
+    <div class="result-cell"><div class="result-label">FedEx Position</div><div class="result-value">9 → 9</div></div>
+    <div class="result-cell"><div class="result-label">Earned</div><div class="result-value">$820,000</div></div>
+  </div>
+
+  <!-- Narrative -->
+  <div class="narrative">
+    <div class="narrative-context">FedEx St. Jude Championship</div>
+    <div class="narrative-headline">On to the BMW.</div>
+    <div class="narrative-body">Round one is handled. Now the season gets sharper, and so does the math.</div>
+    <div class="narrative-quote">The iron play got sharp at exactly the right time. You were not chasing pins. You were bothering them.</div>
+  </div>
+
+  <div>
+    <button class="btn">On to the BMW Championship</button>
+  </div>
+
+</div>
+</body>
+</html>

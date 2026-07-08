@@ -1,16 +1,37 @@
+/* ─── Strokes Game Design System tokens ──────────────────────────────────────
+   Source: app/design-system-for-strokes-game (Claude Design export). These files
+   define the oklch color palette, semantic color aliases, the type scale, and
+   the spacing/radius scale. The app's own brand variables below are remapped
+   onto these tokens so the whole UI resolves to design-system values. */
+@import "./tokens/colors.css";
+@import "./tokens/typography.css";
+@import "./tokens/spacing.css";
+
 :root {
-  --brand-primary: #58914a;
-  --brand-accent: #71a75c;
-  --brand-deep: #30682b;
-  --brand-cream: #f4f1ea;
-  --brand-flag: #d8302a;
-  --brand-ink: #1a1a1a;
-  --surface-raised: #fffaf0;
-  --line: rgba(26, 26, 26, 0.12);
-  --line-strong: rgba(26, 26, 26, 0.24);
+  /* Fonts are self-hosted via next/font (layout.tsx). Bridge the design-system
+     family roles to those variables (overrides the placeholder families the
+     token file would otherwise carry). */
+  --font-display: var(--font-gemunu), "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-ui: var(--font-switzer), system-ui, -apple-system, sans-serif;
+  --font-sans: var(--font-ui);
+  --font-condensed: var(--font-display);
+
+  /* App brand variables remapped onto the design-system semantic tokens so
+     every existing rule that references them recolors to spec automatically. */
+  --brand-primary: var(--color-green-700); /* positive accent / borders */
+  --brand-accent: var(--color-green-600);
+  --brand-deep: var(--color-green-600);    /* readable positive SG value / emphasis text */
+  --brand-cream: var(--bg-page);
+  --brand-flag: var(--text-negative);      /* negative red — text only */
+  --brand-ink: var(--text-primary);
+  --surface-raised: var(--bg-surface);
+  --line: var(--border-default);           /* warm 1px border / grid gap */
+  --line-strong: var(--border-strong);
+
+  /* The design system is flat: borders define structure, not shadows. The one
+     exception is the spinner panel (kept rich per design decision), which is the
+     only consumer of --shadow. */
   --shadow: 0 24px 80px rgba(26, 26, 26, 0.12);
-  --font-sans: var(--font-switzer), ui-sans-serif, system-ui, sans-serif;
-  --font-condensed: "Arial Narrow", "Roboto Condensed", ui-sans-serif, sans-serif;
 }
 
 * {
@@ -39,11 +60,7 @@ button {
 
 .page-shell {
   min-height: 100vh;
-  background:
-    linear-gradient(90deg, rgba(26, 26, 26, 0.045) 1px, transparent 1px),
-    linear-gradient(rgba(26, 26, 26, 0.04) 1px, transparent 1px),
-    var(--brand-cream);
-  background-size: 44px 44px;
+  background: var(--brand-cream);
 }
 
 .wordmark {
@@ -71,8 +88,7 @@ button {
   top: 0;
   z-index: 10;
   border-bottom: 1px solid var(--line);
-  background: rgba(244, 241, 234, 0.94);
-  backdrop-filter: blur(18px);
+  background: var(--brand-cream);
 }
 
 .site-header__inner {
@@ -151,22 +167,9 @@ button {
   align-self: stretch;
   min-height: 420px;
   border: 1px solid var(--brand-ink);
-  background:
-    radial-gradient(circle at 86% 18%, rgba(88, 145, 74, 0.28), transparent 28%),
-    linear-gradient(135deg, #fffaf0, #ede7db 56%, #d8dfcf);
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
   overflow: hidden;
   position: relative;
-}
-
-.current-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.07;
-  pointer-events: none;
-  background-image: radial-gradient(rgba(0, 0, 0, 0.45) 1px, transparent 1px);
-  background-size: 3px 3px;
 }
 
 .current-card__top {
@@ -229,14 +232,12 @@ button {
   text-align: left;
   transition:
     background 180ms ease,
-    transform 180ms ease,
-    box-shadow 180ms ease;
+    transform 180ms ease;
 }
 
 .slot:not(:disabled):hover {
   z-index: 1;
-  background: #fffaf0;
-  box-shadow: 0 18px 50px rgba(26, 26, 26, 0.14);
+  background: var(--surface-raised);
   transform: translateY(-3px);
 }
 
@@ -249,9 +250,7 @@ button {
 }
 
 .slot--empty {
-  background:
-    linear-gradient(135deg, rgba(255, 250, 240, 0.9), rgba(244, 241, 234, 0.78)),
-    var(--brand-cream);
+  background: var(--brand-cream);
 }
 
 .slot__head {
@@ -359,8 +358,7 @@ button {
 
 .year-filter {
   border: 1px solid var(--brand-ink);
-  background: rgba(255, 250, 240, 0.9);
-  box-shadow: 0 12px 38px rgba(26, 26, 26, 0.08);
+  background: var(--surface-raised);
 }
 
 .year-filter__tabs {
@@ -545,8 +543,7 @@ button {
   gap: 16px;
   align-items: stretch;
   border: 1px solid var(--brand-ink);
-  background: rgba(255, 250, 240, 0.92);
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
   overflow: visible;
   padding: 14px;
 }
@@ -569,7 +566,6 @@ button {
   width: 84px;
   height: auto;
   border: 1px solid var(--brand-ink);
-  box-shadow: 0 6px 18px rgba(26, 26, 26, 0.12);
 }
 
 .course-board__art {
@@ -609,19 +605,15 @@ button {
   color: var(--brand-ink);
   padding: 12px;
   text-align: left;
-  backdrop-filter: blur(12px);
-  box-shadow: 0 12px 34px rgba(26, 26, 26, 0.14);
   transition:
     background 160ms ease,
     border-color 160ms ease,
-    transform 160ms ease,
-    box-shadow 160ms ease;
+    transform 160ms ease;
 }
 
 .course-zone:not(:disabled):hover {
-  background: #fffaf0;
+  background: var(--surface-raised);
   border-color: var(--brand-deep);
-  box-shadow: 0 20px 48px rgba(26, 26, 26, 0.18);
   transform: translateY(-2px);
 }
 
@@ -863,7 +855,6 @@ button {
   position: absolute;
   inset: 0;
   background: rgba(26, 26, 26, 0.55);
-  backdrop-filter: blur(6px);
 }
 
 .intro-modal__panel {
@@ -877,7 +868,6 @@ button {
   padding: 40px 36px;
   border: 1px solid var(--brand-ink);
   background: var(--surface-raised);
-  box-shadow: var(--shadow);
   animation: intro-modal-rise 0.32s ease;
 }
 
@@ -924,7 +914,6 @@ button {
   position: absolute;
   inset: 0;
   background: rgba(26, 26, 26, 0.55);
-  backdrop-filter: blur(6px);
 }
 
 .mode-chooser__panel {
@@ -939,7 +928,6 @@ button {
   padding: 34px 32px;
   border: 1px solid var(--brand-ink);
   background: var(--surface-raised);
-  box-shadow: var(--shadow);
   animation: intro-modal-rise 0.32s ease;
 }
 
@@ -1084,8 +1072,7 @@ button {
   display: grid;
   gap: 10px;
   border: 1px solid var(--brand-ink);
-  background: rgba(255, 250, 240, 0.9);
-  box-shadow: 0 12px 38px rgba(26, 26, 26, 0.08);
+  background: var(--surface-raised);
   padding: 14px;
 }
 
@@ -1109,8 +1096,7 @@ button {
 
 .results__panel {
   border: 1px solid var(--brand-ink);
-  background: #fffaf0;
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
 }
 
 .results__status {
@@ -1479,11 +1465,10 @@ button {
   gap: 1px;
   border: 1px solid var(--brand-ink);
   background: var(--brand-ink);
-  box-shadow: var(--shadow);
 }
 
 .fedex-bar div {
-  background: var(--brand-deep);
+  background: var(--bg-banner);
   color: var(--brand-cream);
   padding: 16px 22px;
 }
@@ -1516,8 +1501,7 @@ button {
 
 .playoff-block {
   border: 1px solid var(--brand-ink);
-  background: #fffaf0;
-  box-shadow: var(--shadow);
+  background: var(--surface-raised);
   padding: 24px 26px 26px;
   animation: playoff-block-in 0.32s ease-out;
 }
@@ -1640,7 +1624,6 @@ button {
   line-height: 1.45;
   letter-spacing: 0.01em;
   text-transform: none;
-  box-shadow: 0 12px 30px rgba(26, 26, 26, 0.28);
   opacity: 0;
   transform: translateY(4px);
   pointer-events: none;
@@ -1771,12 +1754,6 @@ button {
   font-size: clamp(1.4rem, 2.6vw, 2.1rem);
   font-weight: 680;
   line-height: 1;
-}
-
-/* Regular-season summary carries three stats — keep it an even three columns
-   at every width so there's never an empty trailing cell. */
-.playoff-summary__grid.playoff-summary__grid--trio {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .playoff-summary__tier {

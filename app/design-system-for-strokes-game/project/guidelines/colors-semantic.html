@@ -1,0 +1,26 @@
+<!-- @dsCard group="Colors" viewport="700x160" name="Semantic Colors" subtitle="bg, text, border roles" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); font-family: var(--font-ui); padding: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .cell { padding: 10px 12px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.08); }
+  .name { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .val  { font-size: 10px; opacity: 0.7; }
+</style>
+</head>
+<body>
+  <div class="grid">
+    <div class="cell" style="background:var(--bg-page)"><div class="name" style="color:var(--text-primary)">bg-page</div><div class="val" style="color:var(--text-secondary)">cream-100</div></div>
+    <div class="cell" style="background:var(--bg-surface)"><div class="name" style="color:var(--text-primary)">bg-surface</div><div class="val" style="color:var(--text-secondary)">cream-50</div></div>
+    <div class="cell" style="background:var(--bg-banner)"><div class="name" style="color:var(--text-on-dark)">bg-banner</div><div class="val" style="color:var(--text-on-dark-dim)">green-800</div></div>
+    <div class="cell" style="background:var(--bg-surface-alt)"><div class="name" style="color:var(--text-primary)">bg-surface-alt</div><div class="val" style="color:var(--text-secondary)">cream-200</div></div>
+    <div class="cell" style="background:var(--bg-positive); border-color:var(--border-positive)"><div class="name" style="color:var(--text-positive)">bg-positive</div><div class="val" style="color:var(--text-positive)">+0.47</div></div>
+    <div class="cell" style="background:var(--bg-negative)"><div class="name" style="color:var(--text-negative)">bg-negative</div><div class="val" style="color:var(--text-negative)">-0.13</div></div>
+    <div class="cell" style="background:var(--bg-surface); border:1px solid var(--border-default)"><div class="name" style="color:var(--text-secondary)">border-default</div><div class="val" style="color:var(--text-muted)">cream-300</div></div>
+    <div class="cell" style="background:var(--bg-surface); border:1px solid var(--border-strong)"><div class="name" style="color:var(--text-secondary)">border-strong</div><div class="val" style="color:var(--text-muted)">cream-400</div></div>
+  </div>
+</body>
+</html>

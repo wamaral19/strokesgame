@@ -1,0 +1,294 @@
+<!-- @startingPoint section="Screens" subtitle="Season recap — banner, picks, finishes" viewport="780x860" -->
+<!-- @dsCard group="UI Kit" viewport="780x860" name="Recap Screen" subtitle="FedEx banner · SG picks · notable finishes" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="../../styles.css">
+<title>Recap — Strokes Game</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg-page);
+    font-family: var(--font-ui);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: inherit; }
+
+  /* Banner */
+  .banner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    background: var(--bg-banner);
+  }
+  .banner-cell {
+    padding: 16px 24px;
+    border-left: 1px solid rgba(255,255,255,0.12);
+  }
+  .banner-cell:first-child { border-left: none; }
+  .eyebrow {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-on-dark-dim);
+    margin-bottom: 6px;
+  }
+  .banner-value {
+    font-family: var(--font-display);
+    font-size: var(--text-xl);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-tight);
+    color: var(--text-on-dark);
+    line-height: 1;
+  }
+
+  /* Page body */
+  .page { padding: 20px 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  /* Game mode line */
+  .game-mode {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    display: flex;
+    gap: 6px;
+  }
+  .game-mode strong { font-weight: var(--weight-semibold); color: var(--text-primary); }
+
+  /* Picks grid */
+  .picks-grid {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .pick-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-default);
+    background: var(--bg-surface);
+  }
+  .pick-row:nth-child(odd) { border-right: 1px solid var(--border-default); }
+  .pick-row:nth-last-child(2), .pick-row:last-child { border-bottom: none; }
+  .pick-cat {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 3px;
+  }
+  .pick-player {
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+  }
+  .pick-val {
+    font-size: var(--text-base);
+    font-weight: var(--weight-semibold);
+    white-space: nowrap;
+  }
+  .val-pos { color: var(--text-positive); }
+  .val-neg { color: var(--text-negative); }
+
+  /* Total bar */
+  .total-bar {
+    grid-column: 1 / -1;
+    background: var(--bg-positive);
+    border-top: 1px solid var(--border-default);
+    padding: 10px 20px;
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+    color: var(--text-positive);
+  }
+
+  /* Section heading */
+  .section-heading {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+  }
+
+  /* Finish list */
+  .finish-list {
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+  }
+  .finish-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border-default);
+    border-left: 3px solid var(--color-green-700);
+    background: var(--bg-surface);
+  }
+  .finish-row:last-child { border-bottom: none; }
+  .finish-pos {
+    font-size: var(--text-base);
+    font-weight: var(--weight-bold);
+    color: var(--text-positive);
+    min-width: 30px;
+  }
+  .finish-name {
+    font-size: var(--text-base);
+    font-weight: var(--weight-medium);
+    color: var(--text-primary);
+    flex: 1;
+  }
+  .badge {
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-semibold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    padding: 3px 8px;
+    white-space: nowrap;
+  }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    font-family: var(--font-ui);
+    font-size: var(--text-2xs);
+    font-weight: var(--weight-bold);
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    border-radius: var(--radius-pill);
+    padding: 10px 22px;
+    cursor: pointer;
+    line-height: 1;
+    white-space: nowrap;
+    transition: opacity 120ms;
+    border: none;
+  }
+  .btn:hover { opacity: 0.78; }
+  .btn-primary { background: var(--btn-primary-bg); color: var(--btn-primary-text); }
+  .btn-secondary { background: transparent; color: var(--btn-secondary-text); border: 1.5px solid var(--btn-secondary-border); }
+  .action-hint {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+  <!-- Banner -->
+  <div class="banner">
+    <div class="banner-cell">
+      <div class="eyebrow">FedEx Cup Position</div>
+      <div class="banner-value">No. 27</div>
+    </div>
+    <div class="banner-cell">
+      <div class="eyebrow">On Course Earnings</div>
+      <div class="banner-value">$7,216,000</div>
+    </div>
+    <div class="banner-cell">
+      <div class="eyebrow">Wins</div>
+      <div class="banner-value">0</div>
+    </div>
+    <div class="banner-cell">
+      <div class="eyebrow">Mulligans</div>
+      <div class="banner-value">0</div>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <!-- Game mode -->
+    <div class="game-mode">
+      <strong>Game Mode</strong>
+      <span>Blind · 2026 Season · Entire Field</span>
+    </div>
+
+    <!-- Picks -->
+    <div class="picks-grid">
+      <div class="pick-row">
+        <div>
+          <div class="pick-cat">SG: Putting</div>
+          <div class="pick-player">Alex Smalley, 2026</div>
+        </div>
+        <div class="pick-val val-pos">+0.36</div>
+      </div>
+      <div class="pick-row">
+        <div>
+          <div class="pick-cat">SG: Around the Green</div>
+          <div class="pick-player">Jacob Bridgeman, 2026</div>
+        </div>
+        <div class="pick-val val-neg">−0.05</div>
+      </div>
+      <div class="pick-row">
+        <div>
+          <div class="pick-cat">SG: Approach</div>
+          <div class="pick-player">Austin Smotherman, 2026</div>
+        </div>
+        <div class="pick-val val-pos">+0.70</div>
+      </div>
+      <div class="pick-row">
+        <div>
+          <div class="pick-cat">SG: Off the Tee</div>
+          <div class="pick-player">Viktor Hovland, 2026</div>
+        </div>
+        <div class="pick-val val-pos">+0.16</div>
+      </div>
+      <div class="total-bar">Total Strokes Gained: +1.17</div>
+    </div>
+
+    <!-- Notable finishes -->
+    <div>
+      <div class="section-heading">Notable Finishes</div>
+      <div class="finish-list">
+        <div class="finish-row">
+          <div class="finish-pos">T5</div>
+          <div class="finish-name">FedEx St. Jude Championship</div>
+          <span class="badge">Playoff</span>
+        </div>
+        <div class="finish-row">
+          <div class="finish-pos">T3</div>
+          <div class="finish-name">Truist Championship</div>
+          <span class="badge">Signature</span>
+        </div>
+        <div class="finish-row">
+          <div class="finish-pos">T2</div>
+          <div class="finish-name">Valspar Championship</div>
+          <span class="badge">Regular</span>
+        </div>
+        <div class="finish-row">
+          <div class="finish-pos">T4</div>
+          <div class="finish-name">John Deere Classic</div>
+          <span class="badge">Regular</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary">Copy Recap</button>
+      <button class="btn btn-secondary">Share</button>
+      <span class="action-hint">Screenshot this recap to share it anywhere.</span>
+    </div>
+    <div>
+      <button class="btn btn-primary">New Round</button>
+    </div>
+
+  </div>
+</body>
+</html>

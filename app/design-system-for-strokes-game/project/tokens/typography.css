@@ -1,0 +1,74 @@
+@import url('https://fonts.googleapis.com/css2?family=Gemunu+Libre:wght@400;500;600;700;800&family=Switzer:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+:root {
+  /* ─── Families ──────────────────────────────────── */
+  --font-display: 'Gemunu Libre', 'Arial Narrow', sans-serif;
+  --font-ui:      'Switzer', system-ui, -apple-system, sans-serif;
+
+  /* ─── Scale ─────────────────────────────────────── */
+  /* Use --font-ui at these sizes unless noted */
+  --text-2xs:  10px;  /* eyebrow labels — ALL CAPS only */
+  --text-xs:   11px;  /* secondary sub-labels */
+  --text-sm:   13px;  /* table values, meta, LOCKED badge */
+  --text-base: 15px;  /* body prose, player names in rows */
+  --text-md:   17px;  /* card player name, list tournament */
+  --text-lg:   20px;  /* section headings (NOTABLE FINISHES) */
+  --text-xl:   24px;  /* banner stat values (No. 27) */
+  --text-2xl:  30px;  /* major stat values (T5, 440, $820,000) — use --font-display */
+  --text-3xl:  44px;  /* SG stat card numbers (+0.23) — use --font-display */
+  --text-4xl:  58px;  /* tournament headline — use --font-display */
+
+  /* ─── Weights ────────────────────────────────────── */
+  --weight-regular:  400;
+  --weight-medium:   500;
+  --weight-semibold: 600;
+  --weight-bold:     700;
+  --weight-black:    800;
+
+  /* ─── Letter Spacing ────────────────────────────── */
+  --tracking-label:  0.07em;   /* ALL CAPS eyebrow labels */
+  --tracking-tight:  -0.02em;  /* large display numbers */
+  --tracking-normal: 0em;
+
+  /* ─── Line Heights ──────────────────────────────── */
+  --leading-tight: 1.1;   /* display numbers, tournament headline */
+  --leading-snug:  1.25;  /* card content */
+  --leading-base:  1.55;  /* body prose */
+
+  /* ─── Composite Roles ───────────────────────────── */
+  /* Eyebrow: small ALL CAPS label above a value */
+  --role-eyebrow-font:    var(--font-ui);
+  --role-eyebrow-size:    var(--text-2xs);
+  --role-eyebrow-weight:  var(--weight-semibold);
+  --role-eyebrow-spacing: var(--tracking-label);
+  --role-eyebrow-color:   var(--text-secondary);
+
+  /* Display number: the big hero stat */
+  --role-display-font:    var(--font-display);
+  --role-display-weight:  var(--weight-bold);
+  --role-display-spacing: var(--tracking-tight);
+  --role-display-leading: var(--leading-tight);
+
+  /* Player name headline */
+  --role-name-font:   var(--font-display);
+  --role-name-size:   var(--text-md);
+  --role-name-weight: var(--weight-bold);
+
+  /* Tournament/section headline */
+  --role-headline-font:   var(--font-display);
+  --role-headline-size:   var(--text-4xl);
+  --role-headline-weight: var(--weight-bold);
+  --role-headline-leading: var(--leading-tight);
+
+  /* Body prose */
+  --role-body-font:   var(--font-ui);
+  --role-body-size:   var(--text-base);
+  --role-body-weight: var(--weight-regular);
+  --role-body-leading: var(--leading-base);
+
+  /* Button label */
+  --role-button-font:    var(--font-ui);
+  --role-button-size:    var(--text-2xs);
+  --role-button-weight:  var(--weight-bold);
+  --role-button-spacing: var(--tracking-label);
+}

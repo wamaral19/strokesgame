@@ -1,0 +1,54 @@
+:root {
+  /* ─── Base Palette ─────────────────────────────── */
+  /* Greens */
+  --color-green-900: oklch(28% 0.08 145);
+  --color-green-800: oklch(33% 0.09 145);   /* banner bg */
+  --color-green-700: oklch(38% 0.10 145);   /* positive text */
+  --color-green-600: oklch(44% 0.10 145);
+  --color-green-100: oklch(91% 0.04 145);   /* positive card bg */
+  --color-green-50:  oklch(95% 0.02 145);
+
+  /* Reds */
+  --color-red-700:   oklch(42% 0.17 25);    /* negative text */
+  --color-red-100:   oklch(94% 0.05 25);    /* negative card bg */
+
+  /* Cream / Neutral */
+  --color-cream-50:  oklch(98% 0.006 85);   /* card surface */
+  --color-cream-100: oklch(96% 0.012 85);   /* page bg */
+  --color-cream-200: oklch(92% 0.014 85);   /* subtle divider */
+  --color-cream-300: oklch(86% 0.013 85);   /* border */
+  --color-cream-400: oklch(76% 0.010 85);   /* strong border */
+
+  /* Ink */
+  --color-ink-900:   oklch(14% 0.005 85);   /* primary text */
+  --color-ink-700:   oklch(28% 0.006 85);   /* heavy secondary */
+  --color-ink-600:   oklch(46% 0.008 85);   /* secondary / labels */
+  --color-ink-400:   oklch(62% 0.007 85);   /* muted / tertiary */
+  --color-ink-200:   oklch(82% 0.006 85);   /* placeholder */
+
+  /* ─── Semantic Tokens ──────────────────────────── */
+  --bg-page:          var(--color-cream-100);
+  --bg-surface:       var(--color-cream-50);
+  --bg-surface-alt:   var(--color-cream-200);
+  --bg-banner:        var(--color-green-800);
+  --bg-positive:      var(--color-green-100);
+  --bg-negative:      var(--color-red-100);
+
+  --text-primary:     var(--color-ink-900);
+  --text-secondary:   var(--color-ink-600);
+  --text-muted:       var(--color-ink-400);
+  --text-positive:    var(--color-green-700);
+  --text-negative:    var(--color-red-700);
+  --text-on-dark:     oklch(96% 0.008 145); /* warm white for green banner */
+  --text-on-dark-dim: oklch(80% 0.012 145); /* dimmed on banner */
+
+  --border-default:   var(--color-cream-300);
+  --border-strong:    var(--color-cream-400);
+  --border-positive:  var(--color-green-700);
+
+  --btn-primary-bg:   var(--color-ink-900);
+  --btn-primary-text: var(--color-cream-50);
+  --btn-secondary-bg: transparent;
+  --btn-secondary-border: var(--color-ink-900);
+  --btn-secondary-text: var(--color-ink-900);
+}

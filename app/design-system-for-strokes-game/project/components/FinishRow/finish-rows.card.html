@@ -1,0 +1,24 @@
+<!-- @dsCard group="Components" viewport="700x220" name="Finish Rows" subtitle="Notable finishes list with green accent" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); padding: 16px; font-family: var(--font-ui); }
+  .list { border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 20px; padding: 14px 20px; border-bottom: 1px solid var(--border-default); border-left: 3px solid var(--color-green-700); background: var(--bg-surface); }
+  .row:last-child { border-bottom: none; }
+  .finish { font-size: var(--text-base); font-weight: var(--weight-bold); color: var(--text-positive); min-width: 32px; }
+  .tournament { font-size: var(--text-base); font-weight: var(--weight-medium); color: var(--text-primary); flex: 1; }
+  .badge { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-secondary); border: 1px solid var(--border-strong); border-radius: var(--radius-sm); padding: 3px 8px; white-space: nowrap; }
+</style>
+</head>
+<body>
+  <div class="list">
+    <div class="row"><div class="finish">T5</div><div class="tournament">FedEx St. Jude Championship</div><span class="badge">Playoff</span></div>
+    <div class="row"><div class="finish">T3</div><div class="tournament">Truist Championship</div><span class="badge">Signature</span></div>
+    <div class="row"><div class="finish">T2</div><div class="tournament">Valspar Championship</div><span class="badge">Regular</span></div>
+    <div class="row"><div class="finish">T4</div><div class="tournament">John Deere Classic</div><span class="badge">Regular</span></div>
+  </div>
+</body>
+</html>

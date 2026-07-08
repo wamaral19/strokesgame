@@ -1,0 +1,37 @@
+<!-- @dsCard group="Colors" viewport="700x180" name="Palette — Greens & Reds" subtitle="Primary brand colors" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); font-family: var(--font-ui); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .row { display: flex; gap: 6px; align-items: flex-end; }
+  .swatch { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .chip { width: 64px; height: 40px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.08); }
+  .label { font-size: 9px; font-weight: 600; letter-spacing: 0.05em; color: var(--text-secondary); text-align: center; text-transform: uppercase; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="swatch"><div class="chip" style="background:var(--color-green-900)"></div><div class="label">900</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-green-800)"></div><div class="label">800</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-green-700)"></div><div class="label">700</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-green-600)"></div><div class="label">600</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-green-100)"></div><div class="label">100</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-green-50)"></div><div class="label">50</div></div>
+    <div class="swatch" style="margin-left:12px"><div class="chip" style="background:var(--color-red-700)"></div><div class="label">Red 700</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-red-100)"></div><div class="label">Red 100</div></div>
+  </div>
+  <div class="row">
+    <div class="swatch"><div class="chip" style="background:var(--color-cream-50); border-color:#ccc"></div><div class="label">Cream 50</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-cream-100); border-color:#ccc"></div><div class="label">100</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-cream-200)"></div><div class="label">200</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-cream-300)"></div><div class="label">300</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-cream-400)"></div><div class="label">400</div></div>
+    <div class="swatch" style="margin-left:12px"><div class="chip" style="background:var(--color-ink-900)"></div><div class="label">Ink 900</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-ink-600)"></div><div class="label">600</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-ink-400)"></div><div class="label">400</div></div>
+    <div class="swatch"><div class="chip" style="background:var(--color-ink-200)"></div><div class="label">200</div></div>
+  </div>
+</body>
+</html>

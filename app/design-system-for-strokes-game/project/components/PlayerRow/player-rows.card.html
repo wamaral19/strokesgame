@@ -1,0 +1,29 @@
+<!-- @dsCard group="Components" viewport="700x200" name="Player Rows" subtitle="SG pick rows with eyebrow + value" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); font-family: var(--font-ui); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; border: 1px solid var(--border-default); border-radius: var(--radius-md); overflow: hidden; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border-default); }
+  .row:nth-child(odd) { border-right: 1px solid var(--border-default); }
+  .row:last-child, .row:nth-last-child(2):nth-child(odd) { border-bottom: none; }
+  .left { display: flex; flex-direction: column; gap: 3px; }
+  .cat { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-secondary); }
+  .player { font-size: var(--text-base); font-weight: var(--weight-medium); color: var(--text-primary); }
+  .pos { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text-positive); }
+  .neg { font-size: var(--text-base); font-weight: var(--weight-semibold); color: var(--text-negative); }
+  .total { grid-column: 1 / -1; background: var(--bg-positive); padding: 10px 20px; font-size: var(--text-sm); font-weight: var(--weight-semibold); color: var(--text-positive); border-top: 1px solid var(--border-default); }
+</style>
+</head>
+<body>
+  <div class="grid" style="margin:16px">
+    <div class="row"><div class="left"><div class="cat">SG: Putting</div><div class="player">Alex Smalley, 2026</div></div><div class="pos">+0.36</div></div>
+    <div class="row"><div class="left"><div class="cat">SG: Around the Green</div><div class="player">Jacob Bridgeman, 2026</div></div><div class="neg">−0.05</div></div>
+    <div class="row"><div class="left"><div class="cat">SG: Approach</div><div class="player">Austin Smotherman, 2026</div></div><div class="pos">+0.70</div></div>
+    <div class="row"><div class="left"><div class="cat">SG: Off the Tee</div><div class="player">Viktor Hovland, 2026</div></div><div class="pos">+0.16</div></div>
+    <div class="total">Total Strokes Gained: +1.17</div>
+  </div>
+</body>
+</html>

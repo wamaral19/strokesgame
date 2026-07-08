@@ -1,0 +1,45 @@
+<!-- @dsCard group="Type" viewport="700x160" name="Eyebrow Labels" subtitle="ALL CAPS label patterns" -->
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="stylesheet" href="../styles.css">
+<style>
+  body { margin: 0; background: var(--bg-page); padding: 20px; font-family: var(--font-ui); display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start; }
+  .group { display: flex; flex-direction: column; gap: 2px; }
+  .eyebrow { font-size: var(--text-2xs); font-weight: var(--weight-semibold); letter-spacing: var(--tracking-label); text-transform: uppercase; color: var(--text-secondary); }
+  .eyebrow-on-dark { color: var(--text-on-dark-dim); }
+  .value-ui { font-size: var(--text-base); font-weight: var(--weight-medium); color: var(--text-primary); font-family: var(--font-ui); }
+  .value-display { font-size: var(--text-xl); font-weight: var(--weight-bold); color: var(--text-primary); font-family: var(--font-display); letter-spacing: var(--tracking-tight); }
+  .value-display-on-dark { color: var(--text-on-dark); }
+  .banner-bg { background: var(--bg-banner); padding: 14px 18px; border-radius: 6px; }
+  .divider { width: 1px; background: var(--border-default); align-self: stretch; }
+</style>
+</head>
+<body>
+  <div class="group banner-bg">
+    <div class="eyebrow eyebrow-on-dark">Fedex Cup Position</div>
+    <div class="value-display value-display-on-dark">No. 27</div>
+  </div>
+  <div class="group banner-bg">
+    <div class="eyebrow eyebrow-on-dark">On Course Earnings</div>
+    <div class="value-display value-display-on-dark">$7,216,000</div>
+  </div>
+  <div class="divider"></div>
+  <div class="group">
+    <div class="eyebrow">SG: Putting</div>
+    <div class="value-ui">Alex Smalley, 2026</div>
+  </div>
+  <div class="group">
+    <div class="eyebrow">Player</div>
+    <div style="font-size:17px; font-family:var(--font-display); font-weight:700; color:var(--text-primary)">Tom Kite</div>
+  </div>
+  <div class="group">
+    <div class="eyebrow">Year</div>
+    <div style="font-size:24px; font-family:var(--font-display); font-weight:700; color:var(--text-primary)">2005</div>
+  </div>
+  <div class="group">
+    <div class="eyebrow">Finish</div>
+    <div style="font-size:30px; font-family:var(--font-display); font-weight:700; color:var(--text-primary); letter-spacing:var(--tracking-tight)">T5</div>
+  </div>
+</body>
+</html>
