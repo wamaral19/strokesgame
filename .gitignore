@@ -5,6 +5,7 @@ node_modules/
 .next/
 out/
 .npm-cache/
+.gh-cache/
 
 .env
 .env.*
