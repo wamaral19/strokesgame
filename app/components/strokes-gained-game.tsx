@@ -199,6 +199,48 @@ function ResetConfirmDialog({
   );
 }
 
+// A centered modal that surfaces the game's "next step" so the CTA to advance is
+// impossible to miss. Its button performs the action directly — one tap, no
+// intermediate "open then act" step — and it auto-focuses so Enter also works.
+function NextStepDialog({
+  eyebrow,
+  title,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  eyebrow?: string;
+  title: string;
+  detail?: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  const actionRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    actionRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="reset-confirm next-step"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="next-step-title"
+    >
+      <div className="reset-confirm__backdrop" />
+      <div className="reset-confirm__panel next-step__panel">
+        {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
+        <h2 id="next-step-title">{title}</h2>
+        {detail ? <p className="next-step__detail">{detail}</p> : null}
+        <button type="button" className="primary-button" onClick={onAction} ref={actionRef}>
+          {actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ModeOption({
   active,
   disabled,
@@ -442,6 +484,7 @@ function SpinnerPanel({
   assignmentByCategory,
   needsSpin,
   pendingCategory,
+  statsReveal,
   onAssign,
   onStartSpin,
 }: {
@@ -454,6 +497,7 @@ function SpinnerPanel({
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   needsSpin: boolean;
   pendingCategory?: CategoryKey;
+  statsReveal?: React.ReactNode;
   onAssign: (category: CategoryKey) => void;
   onStartSpin: () => void;
 }) {
@@ -478,6 +522,7 @@ function SpinnerPanel({
           </div>
         ) : null}
       </div>
+      {statsReveal}
       <div className="classic-assignment-grid" aria-label="Assign current player to category">
         {CATEGORY_ORDER.map((category) => {
           const filled = assignmentByCategory.has(category);
@@ -637,6 +682,7 @@ function CourseBoard({
   disabled,
   mulligans,
   readOnly,
+  totalSg,
 }: {
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   onAssign: (category: CategoryKey) => void;
@@ -644,6 +690,7 @@ function CourseBoard({
   disabled: boolean;
   mulligans: number;
   readOnly?: boolean;
+  totalSg: number;
 }) {
   return (
     <section className="course-board" aria-label="Golf category board">
@@ -662,6 +709,12 @@ function CourseBoard({
             readOnly={readOnly}
           />
         ))}
+      </div>
+      {/* Compact total that rides on top of the course art on mobile; hidden on
+          desktop, where the score strip in the left rail carries the total. */}
+      <div className="course-board__total" aria-label="Total strokes gained">
+        <span className="eyebrow">Total SG</span>
+        <strong className={totalSg < 0 ? "negative" : ""}>{formatSg(totalSg)}</strong>
       </div>
       <div className="mulligan-rail" aria-label={`Mulligans used: ${mulligans}`}>
         {Array.from({ length: mulligans }).map((_, index) => (
@@ -746,19 +799,11 @@ function PlayoffStageBlock({
   const order = CATEGORY_ORDER;
   const revealCount = Math.min(settledCount + 1, order.length);
   const summaryReady = settledCount >= order.length;
-  const continueRef = useRef<HTMLButtonElement | null>(null);
 
   const byCategory = useMemo(
     () => new Map(stage.categories.map((item) => [item.category, item])),
     [stage],
   );
-
-  // Once the stats settle, pull the CTA into view so the next step is obvious.
-  useEffect(() => {
-    if (summaryReady && isCurrent) {
-      scrollIntoViewSmooth(continueRef.current, "nearest");
-    }
-  }, [summaryReady, isCurrent]);
 
   return (
     <section className="playoff-block" aria-label={stage.event.name} ref={blockRef}>
@@ -819,17 +864,16 @@ function PlayoffStageBlock({
             <p>{stage.writeup.detail}</p>
             {stage.sgNote ? <p className="playoff-writeup__note">{stage.sgNote}</p> : null}
           </div>
-          {isCurrent ? (
-            <button
-              type="button"
-              className="primary-button"
-              onClick={onContinue}
-              ref={continueRef}
-            >
-              {continueLabel}
-            </button>
-          ) : null}
         </div>
+      ) : null}
+
+      {isCurrent && summaryReady ? (
+        <NextStepDialog
+          eyebrow={stage.writeup.label}
+          title={stage.writeup.headline}
+          actionLabel={continueLabel}
+          onAction={onContinue}
+        />
       ) : null}
     </section>
   );
@@ -872,9 +916,12 @@ function RegularSeasonBlock({
         <p>{summary.writeup.detail}</p>
       </div>
       {isCurrent ? (
-        <button type="button" className="primary-button" onClick={onContinue}>
-          {summary.madePlayoffs ? "Enter the FedEx Cup Playoffs" : "See the final standings"}
-        </button>
+        <NextStepDialog
+          eyebrow={summary.writeup.label}
+          title={summary.madePlayoffs ? "You're in the playoffs" : "Your season is over"}
+          actionLabel={summary.madePlayoffs ? "Enter the FedEx Cup Playoffs" : "See the final standings"}
+          onAction={onContinue}
+        />
       ) : null}
     </section>
   );
@@ -2202,15 +2249,16 @@ export function StrokesGainedGame() {
             assignmentByCategory={assignmentByCategory}
             needsSpin={needsSpin}
             pendingCategory={pendingCategory}
+            statsReveal={
+              statsMode === "show" && !complete ? (
+                <div className="stat-reveal" aria-label="Current player stats">
+                  <StatList season={phase === "ready" ? currentSeason : undefined} />
+                </div>
+              ) : null
+            }
             onAssign={handleAssign}
             onStartSpin={handleStartSpin}
           />
-
-          {statsMode === "show" && !complete ? (
-            <div className="stat-reveal" aria-label="Current player stats">
-              <StatList season={phase === "ready" ? currentSeason : undefined} />
-            </div>
-          ) : null}
 
           <div className="score-strip compact" aria-label="Run status">
             <div>
@@ -2234,6 +2282,7 @@ export function StrokesGainedGame() {
           disabled={phase !== "ready" || complete}
           mulligans={mulligans}
           readOnly
+          totalSg={totalSg}
         />
       </section>
 
