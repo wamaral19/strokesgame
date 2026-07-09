@@ -1673,6 +1673,9 @@ button {
   display: grid;
   justify-items: start;
   width: 100%;
+  /* Tighten the space between the rating subtext and the category rail — the
+     shared 18px gap above leaves too much air here. */
+  gap: 6px;
 }
 
 .daily-result__head {
@@ -1725,6 +1728,14 @@ button {
 /* A negative overall total reads red even against the dark green tile. */
 .daily-profile-stat.daily-profile-stat--total .playoff-stat__value--negative {
   color: #ff6b60;
+}
+
+/* The category tile mid-spin: its SG number and year blur and pulse like the
+   spinner reels until it settles on the random year. */
+.daily-profile-stat.is-spinning .playoff-stat__value,
+.daily-profile-stat.is-spinning .playoff-stat__meta {
+  filter: blur(0.7px);
+  animation: reel-pulse 120ms linear infinite;
 }
 
 @media (max-width: 720px) {

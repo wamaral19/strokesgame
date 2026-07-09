@@ -57,6 +57,12 @@ const AVAILABLE_YEARS = Array.from(new Set(SEASONS.map((season) => season.year))
 );
 const LATEST_YEAR = AVAILABLE_YEARS[0];
 
+// Reveal-rail spin timing for a sub-4/4 daily run: each category flickers for
+// DAILY_SPIN_STEP_MS before settling, and the season playback (with its FedEx
+// Cup popup) waits DAILY_PLAYBACK_DELAY_MS after the last category lands.
+const DAILY_SPIN_STEP_MS = 500;
+const DAILY_PLAYBACK_DELAY_MS = 1500;
+
 const ZONE_META: Record<CategoryKey, { className: string; label: string }> = {
   offTee: { className: "zone--driving", label: "Off the Tee" },
   approach: { className: "zone--approach", label: "Approach" },
@@ -1591,6 +1597,18 @@ function bestSeasonForPlayerCategory(playerId: string, category: CategoryKey) {
   );
 }
 
+function playerSeasons(playerId: string) {
+  return SEASONS.filter((season) => season.playerId === playerId);
+}
+
+// Pick any season from the player's career at random. Used when the guess falls
+// short of 4/4 — the reward is a random year rather than their statistical best.
+function randomSeasonForPlayer(playerId: string) {
+  const seasons = playerSeasons(playerId);
+  if (seasons.length === 0) return undefined;
+  return seasons[Math.floor(Math.random() * seasons.length)];
+}
+
 function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
   const ideal = new Map<string, CategoryKey>();
   if (items.length !== CATEGORY_ORDER.length) return ideal;
@@ -1651,18 +1669,15 @@ function DailyChallengeGame({
   const currentItem = challenge.items[currentIndex] ?? challenge.items[0];
   const complete = assignments.length === CATEGORY_ORDER.length;
 
-  const revealedAssignments = useMemo<SlotAssignment[]>(() => {
-    if (!complete) return [];
-    return assignments
-      .map((assignment) => {
-        const season = bestSeasonForPlayerCategory(
-          assignment.item.playerId,
-          assignment.category,
-        );
-        return season ? { category: assignment.category, season } : undefined;
-      })
-      .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
-  }, [assignments, complete]);
+  // The resolved season behind each slot, decided once at reveal. A perfect 4/4
+  // run earns each player's best year in the assigned category; anything less
+  // gets a random year from that player's career (spun in below).
+  const [resolvedAssignments, setResolvedAssignments] = useState<SlotAssignment[]>([]);
+  // How many category tiles in the reveal rail have finished spinning. Each one
+  // spins for 500ms before settling and handing off to the next.
+  const [spinSettled, setSpinSettled] = useState(0);
+  // Forces the rail to re-render mid-spin so the flickering values change.
+  const [spinTick, setSpinTick] = useState(0);
 
   const score = useMemo(() => {
     return assignments.reduce((count, assignment) => {
@@ -1671,6 +1686,16 @@ function DailyChallengeGame({
   }, [assignments, idealByItemId]);
 
   const rating = dailyRating(score);
+  const isBallKnower = score === CATEGORY_ORDER.length;
+
+  // What the run would have scored had every random year been the player's best
+  // year in the assigned category. Shown as the target to beat when short of 4/4.
+  const idealTotal = useMemo(() => {
+    return assignments.reduce((sum, assignment) => {
+      const best = bestSeasonForPlayerCategory(assignment.item.playerId, assignment.category);
+      return sum + (best ? best.sg[assignment.category] : 0);
+    }, 0);
+  }, [assignments]);
 
   const move = (direction: -1 | 1) => {
     setCurrentIndex(
@@ -1703,15 +1728,84 @@ function DailyChallengeGame({
   // Revealing is an explicit, confirmed step: the player taps Submit once all
   // four slots are filled. No auto-lock, so they can re-shuffle picks first.
   const reveal = useCallback(() => {
-    if (!complete || revealedAssignments.length !== CATEGORY_ORDER.length) return;
+    if (!complete) return;
+    const ballKnower =
+      assignments.reduce(
+        (count, assignment) =>
+          count + (idealByItemId.get(assignment.item.id) === assignment.category ? 1 : 0),
+        0,
+      ) === CATEGORY_ORDER.length;
+    const resolved = assignments
+      .map((assignment) => {
+        const season = ballKnower
+          ? bestSeasonForPlayerCategory(assignment.item.playerId, assignment.category)
+          : randomSeasonForPlayer(assignment.item.playerId);
+        return season ? { category: assignment.category, season } : undefined;
+      })
+      .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
+    if (resolved.length !== CATEGORY_ORDER.length) return;
+    // A perfect run lands settled; a random-year run spins the rail in below.
+    setSpinSettled(ballKnower ? CATEGORY_ORDER.length : 0);
+    setResolvedAssignments(resolved);
     setPhase("revealed");
-    onComplete(revealedAssignments);
-  }, [complete, onComplete, revealedAssignments]);
+    // A perfect run has nothing to spin, so hand off to the season playback (and
+    // its FedEx Cup popup) right away. A random-year run defers that until the
+    // spin animation finishes — see the spin effect below.
+    if (ballKnower) onComplete(resolved);
+  }, [assignments, complete, idealByItemId, onComplete]);
 
   useEffect(() => {
     if (phase !== "revealed") return;
     scrollIntoViewSmooth(resultRef.current, "nearest");
   }, [phase]);
+
+  // Drive the reveal-rail spin for a sub-4/4 run: each category flickers through
+  // random years for DAILY_SPIN_STEP_MS, then settles before the next one starts.
+  // Once the last one lands, wait DAILY_PLAYBACK_DELAY_MS before surfacing the
+  // season playback (and its FedEx Cup popup) so the spin gets to breathe.
+  useEffect(() => {
+    if (phase !== "revealed" || isBallKnower || resolvedAssignments.length === 0) return;
+    const timers: number[] = [];
+    const flicker = window.setInterval(() => setSpinTick((tick) => tick + 1), 55);
+    timers.push(flicker);
+    CATEGORY_ORDER.forEach((_, index) => {
+      const settle = window.setTimeout(() => {
+        setSpinSettled(index + 1);
+        if (index === CATEGORY_ORDER.length - 1) window.clearInterval(flicker);
+      }, (index + 1) * DAILY_SPIN_STEP_MS);
+      timers.push(settle);
+    });
+    const surfacePlayback = window.setTimeout(() => {
+      onComplete(resolvedAssignments);
+    }, CATEGORY_ORDER.length * DAILY_SPIN_STEP_MS + DAILY_PLAYBACK_DELAY_MS);
+    timers.push(surfacePlayback);
+    return () => {
+      timers.forEach((timer) => {
+        window.clearTimeout(timer);
+        window.clearInterval(timer);
+      });
+    };
+  }, [phase, isBallKnower, resolvedAssignments, onComplete]);
+
+  // Per-category rows for the reveal rail. A settled row shows the resolved
+  // season; the one currently spinning flickers through the player's real
+  // seasons; rows still queued read "--" until their turn comes up.
+  const railRows = CATEGORY_ORDER.map((category, index) => {
+    const assignment = resolvedAssignments.find((item) => item.category === category);
+    const settled = isBallKnower || index < spinSettled;
+    const spinning = !isBallKnower && index === spinSettled;
+    let displaySeason = assignment?.season;
+    if (spinning && assignment) {
+      const pool = playerSeasons(assignment.season.playerId);
+      displaySeason = pool.length > 0 ? pool[(spinTick + index) % pool.length] : assignment.season;
+    }
+    const shown = (settled || spinning) && displaySeason ? displaySeason : undefined;
+    return { category, assignment, settled, spinning, season: shown };
+  });
+  const displayedTotal = railRows.reduce(
+    (sum, row) => sum + (row.season ? row.season.sg[row.category] : 0),
+    0,
+  );
 
   return (
     <section className="daily-challenge" aria-label={challenge.title}>
@@ -1791,13 +1885,15 @@ function DailyChallengeGame({
                       <MediaCard media={item.media} compact />
                       <span className="daily-tile__reveal">
                         <strong>{playerName}</strong>
-                        <span>
-                          {pickedSeason && picked
-                            ? `${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
-                                pickedSeason.sg[picked.category],
-                              )}`
-                            : "No season"}
-                        </span>
+                        {/* Only a perfect run earns the year + SG readout here.
+                            A random-year run reveals the name only. */}
+                        {isBallKnower && pickedSeason && picked ? (
+                          <span>
+                            {`${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
+                              pickedSeason.sg[picked.category],
+                            )}`}
+                          </span>
+                        ) : null}
                       </span>
                       {picked && ideal ? (
                         <span
@@ -1874,46 +1970,50 @@ function DailyChallengeGame({
             <div className="daily-result" ref={resultRef}>
               <div className="daily-result__head">
                 <span className="eyebrow">{rating}</span>
-                <p>{score}/4 ideal slots</p>
+                <p>
+                  {isBallKnower
+                    ? "4/4 — You get the best year of their career in the SG Category"
+                    : `${score}/4 Ideal Categories — you get a random year from their career. Get them all right and get their best year.`}
+                </p>
               </div>
               <div className="playoff-stat-rail daily-profile-rail" aria-label="Daily player profile">
-                {CATEGORY_ORDER.map((category) => {
-                  const assignment = revealedAssignments.find((item) => item.category === category);
-                  const meta = CATEGORY_META[category];
-                  const value = assignment?.season.sg[category];
+                {railRows.map((row) => {
+                  const meta = CATEGORY_META[row.category];
+                  const value = row.season?.sg[row.category];
                   return (
-                    <div className="playoff-stat playoff-stat--up daily-profile-stat" key={category}>
+                    <div
+                      className={`playoff-stat playoff-stat--up daily-profile-stat ${
+                        row.spinning ? "is-spinning" : ""
+                      }`}
+                      key={row.category}
+                    >
                       <span className="eyebrow">{meta.shortLabel}</span>
                       <strong className="playoff-stat__value">
                         {value !== undefined ? formatSg(value) : "--"}
                       </strong>
                       <span className="playoff-stat__meta">
-                        {assignment
-                          ? `${assignment.season.player} · ${assignment.season.year}`
+                        {row.assignment
+                          ? row.season
+                            ? `${row.assignment.season.player} · ${row.season.year}`
+                            : row.assignment.season.player
                           : "unassigned"}
                       </span>
                     </div>
                   );
                 })}
-                {(() => {
-                  const total = revealedAssignments.reduce(
-                    (sum, item) => sum + item.season.sg[item.category],
-                    0,
-                  );
-                  return (
-                    <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
-                      <span className="eyebrow">SG Total</span>
-                      <strong
-                        className={`playoff-stat__value ${
-                          total < 0 ? "playoff-stat__value--negative" : ""
-                        }`}
-                      >
-                        {formatSg(total)}
-                      </strong>
-                      <span className="playoff-stat__meta">All categories</span>
-                    </div>
-                  );
-                })()}
+                <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
+                  <span className="eyebrow">SG Total</span>
+                  <strong
+                    className={`playoff-stat__value ${
+                      displayedTotal < 0 ? "playoff-stat__value--negative" : ""
+                    }`}
+                  >
+                    {formatSg(displayedTotal)}
+                  </strong>
+                  <span className="playoff-stat__meta">
+                    {isBallKnower ? "All categories" : `Ideal: ${formatSg(idealTotal)}`}
+                  </span>
+                </div>
               </div>
             </div>
           ) : null}
