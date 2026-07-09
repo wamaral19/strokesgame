@@ -441,6 +441,7 @@ function SpinnerPanel({
   showYear,
   assignmentByCategory,
   needsSpin,
+  pendingCategory,
   onAssign,
   onStartSpin,
 }: {
@@ -452,10 +453,11 @@ function SpinnerPanel({
   showYear: boolean;
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   needsSpin: boolean;
+  pendingCategory?: CategoryKey;
   onAssign: (category: CategoryKey) => void;
   onStartSpin: () => void;
 }) {
-  const canAssign = phase === "ready" && !complete && !needsSpin;
+  const canAssign = phase === "ready" && !complete;
   return (
     <section className="spinner-panel" aria-label="Current player and year">
       <div className="spinner-panel__top">
@@ -479,16 +481,23 @@ function SpinnerPanel({
       <div className="classic-assignment-grid" aria-label="Assign current player to category">
         {CATEGORY_ORDER.map((category) => {
           const filled = assignmentByCategory.has(category);
+          const isPending = category === pendingCategory;
+          // Earlier picks are locked; the current spin's player can still be
+          // moved between open slots (or cleared out of their pending slot).
+          const locked = filled && !isPending;
+          const interactive = canAssign && !locked;
           return (
             <button
               type="button"
-              className="classic-assignment-slot"
+              className={`classic-assignment-slot ${isPending ? "is-pending" : ""}`}
               key={category}
-              disabled={!canAssign || filled}
+              disabled={!interactive}
               onClick={() => onAssign(category)}
             >
               <span className="eyebrow">{ZONE_META[category].label}</span>
-              <strong>{filled ? "Filled" : canAssign ? "Assign" : "Wait"}</strong>
+              <strong>
+                {isPending ? "Selected" : filled ? "Filled" : canAssign ? "Assign" : "Wait"}
+              </strong>
             </button>
           );
         })}
@@ -1918,6 +1927,13 @@ export function StrokesGainedGame() {
     return new Map(assignments.map((assignment) => [assignment.category, assignment]));
   }, [assignments]);
 
+  // The slot holding the player from the current spin (if they've been tentatively
+  // dropped somewhere). It stays movable until Start Spin locks the pick in.
+  const pendingCategory = useMemo(() => {
+    if (!needsSpin || !currentSeason) return undefined;
+    return assignments.find((assignment) => assignment.season.id === currentSeason.id)?.category;
+  }, [assignments, currentSeason, needsSpin]);
+
   const clearSpinTimers = useCallback(() => {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
@@ -2028,17 +2044,27 @@ export function StrokesGainedGame() {
   };
 
   const handleAssign = (category: CategoryKey) => {
-    if (
-      !currentSeason ||
-      phase !== "ready" ||
-      assignmentByCategory.has(category) ||
-      complete ||
-      needsSpin
-    ) {
+    if (!currentSeason || phase !== "ready" || complete) return;
+
+    const existing = assignmentByCategory.get(category);
+    // A slot filled by an earlier, locked pick is off-limits — you can only
+    // shuffle the player from the current spin around until you Start Spin.
+    if (existing && existing.season.id !== currentSeason.id) return;
+
+    // Clicking the slot the current player already occupies clears it, freeing
+    // them to be placed elsewhere (or left unplaced).
+    if (existing && existing.season.id === currentSeason.id) {
+      setAssignments(assignments.filter((assignment) => assignment.category !== category));
+      setNeedsSpin(false);
       return;
     }
 
-    const nextAssignments = [...assignments, { category, season: currentSeason }];
+    // Otherwise place the current player here, first lifting them out of any
+    // slot they were tentatively dropped into this turn.
+    const withoutCurrent = assignments.filter(
+      (assignment) => assignment.season.id !== currentSeason.id,
+    );
+    const nextAssignments = [...withoutCurrent, { category, season: currentSeason }];
     setAssignments(nextAssignments);
     setNeedsSpin(nextAssignments.length < CATEGORY_ORDER.length);
   };
@@ -2175,6 +2201,7 @@ export function StrokesGainedGame() {
             showYear={yearMode !== "current"}
             assignmentByCategory={assignmentByCategory}
             needsSpin={needsSpin}
+            pendingCategory={pendingCategory}
             onAssign={handleAssign}
             onStartSpin={handleStartSpin}
           />
