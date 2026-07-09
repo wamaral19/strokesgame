@@ -20,6 +20,7 @@ import {
   optimalCategoryBySeason,
   totalSelectedSg,
 } from "../lib/game/scoring";
+import { NOTABLE_PLAYER_IDS } from "../lib/game/notable-players";
 import { getRandomPlayerSeason } from "../lib/game/selection";
 import { simulateSeason } from "../lib/game/simulation";
 import type {
@@ -370,7 +371,14 @@ function GameModeChooser({
                   title="Entire Field"
                   onSelect={() => onFieldMode("entire")}
                 />
-                <ModeOption active={false} disabled title="Notables" soon />
+                <ModeOption
+                  active={fieldMode === "notables"}
+                  title="Notables"
+                  onSelect={() => {
+                    onFieldMode("notables");
+                    onYearMode("all");
+                  }}
+                />
               </div>
             </fieldset>
 
@@ -431,6 +439,10 @@ function SpinnerPanel({
   pickNumber,
   complete,
   showYear,
+  assignmentByCategory,
+  needsSpin,
+  onAssign,
+  onStartSpin,
 }: {
   displayPlayer: string;
   displayYear: string;
@@ -438,12 +450,19 @@ function SpinnerPanel({
   pickNumber: number;
   complete: boolean;
   showYear: boolean;
+  assignmentByCategory: Map<CategoryKey, SlotAssignment>;
+  needsSpin: boolean;
+  onAssign: (category: CategoryKey) => void;
+  onStartSpin: () => void;
 }) {
+  const canAssign = phase === "ready" && !complete && !needsSpin;
   return (
     <section className="spinner-panel" aria-label="Current player and year">
       <div className="spinner-panel__top">
         <span className="eyebrow">Pick {pickNumber} of 4</span>
-        <span className="pill">{complete ? "Complete" : phase === "ready" ? "Ready" : "Spinning"}</span>
+        <span className="pill">
+          {complete ? "Complete" : needsSpin ? "Assigned" : phase === "ready" ? "Ready" : "Spinning"}
+        </span>
       </div>
       <div className={`spinner-panel__body ${showYear ? "" : "spinner-panel__body--solo"}`}>
         <div className={`reel reel--player ${phase === "player" ? "is-spinning" : ""}`}>
@@ -457,6 +476,30 @@ function SpinnerPanel({
           </div>
         ) : null}
       </div>
+      <div className="classic-assignment-grid" aria-label="Assign current player to category">
+        {CATEGORY_ORDER.map((category) => {
+          const filled = assignmentByCategory.has(category);
+          return (
+            <button
+              type="button"
+              className="classic-assignment-slot"
+              key={category}
+              disabled={!canAssign || filled}
+              onClick={() => onAssign(category)}
+            >
+              <span className="eyebrow">{ZONE_META[category].label}</span>
+              <strong>{filled ? "Filled" : canAssign ? "Assign" : "Wait"}</strong>
+            </button>
+          );
+        })}
+      </div>
+      {needsSpin && !complete ? (
+        <div className="classic-spin-action">
+          <button type="button" className="primary-button" onClick={onStartSpin}>
+            Start Spin
+          </button>
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -492,15 +535,17 @@ function ZoneSlot({
   onAssign,
   onMulligan,
   disabled,
+  readOnly,
 }: {
   category: CategoryKey;
   assignment?: SlotAssignment;
   onAssign: (category: CategoryKey) => void;
   onMulligan: (category: CategoryKey) => void;
   disabled: boolean;
+  readOnly?: boolean;
 }) {
   const zone = ZONE_META[category];
-  const canAssign = !assignment && !disabled;
+  const canAssign = !assignment && !disabled && !readOnly;
 
   if (assignment) {
     const selectedValue = assignment.season.sg[category];
@@ -542,7 +587,7 @@ function ZoneSlot({
     >
       <span className="course-zone__head">
         <span className="course-zone__label">{zone.label}</span>
-        <span className="course-zone__state">{canAssign ? "Assign" : "Wait"}</span>
+        <span className="course-zone__state">{readOnly ? "Open" : canAssign ? "Assign" : "Wait"}</span>
       </span>
       <span className="course-zone__empty" />
     </button>
@@ -582,12 +627,14 @@ function CourseBoard({
   onMulligan,
   disabled,
   mulligans,
+  readOnly,
 }: {
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   onAssign: (category: CategoryKey) => void;
   onMulligan: (category: CategoryKey) => void;
   disabled: boolean;
   mulligans: number;
+  readOnly?: boolean;
 }) {
   return (
     <section className="course-board" aria-label="Golf category board">
@@ -603,6 +650,7 @@ function CourseBoard({
             onAssign={onAssign}
             onMulligan={onMulligan}
             disabled={disabled}
+            readOnly={readOnly}
           />
         ))}
       </div>
@@ -699,7 +747,7 @@ function PlayoffStageBlock({
   // Once the stats settle, pull the CTA into view so the next step is obvious.
   useEffect(() => {
     if (summaryReady && isCurrent) {
-      scrollIntoViewSmooth(continueRef.current, "center");
+      scrollIntoViewSmooth(continueRef.current, "nearest");
     }
   }, [summaryReady, isCurrent]);
 
@@ -1251,7 +1299,7 @@ function SeasonPlayback({
   // have to scroll to reach the next CTA. Skip the initial render.
   useEffect(() => {
     if (step === 0) return;
-    scrollIntoViewSmooth(currentRef.current, "start");
+    scrollIntoViewSmooth(currentRef.current, "nearest");
   }, [step]);
 
   const advance = useCallback(() => setStep((value) => value + 1), []);
@@ -1598,7 +1646,7 @@ function DailyChallengeGame({
 
   useEffect(() => {
     if (phase !== "revealed") return;
-    scrollIntoViewSmooth(resultRef.current, "start");
+    scrollIntoViewSmooth(resultRef.current, "nearest");
   }, [phase]);
 
   return (
@@ -1827,12 +1875,16 @@ export function StrokesGainedGame() {
   const [displayYear, setDisplayYear] = useState("...");
   const [phase, setPhase] = useState<SpinPhase>("player");
   const [mulligans, setMulligans] = useState(0);
+  const [needsSpin, setNeedsSpin] = useState(false);
   const [yearMode, setYearMode] = useState<YearMode>("current");
   const [selectedYears, setSelectedYears] = useState<number[]>([LATEST_YEAR]);
   const timers = useRef<number[]>([]);
   const dailyChallenge = useMemo(() => getDailyChallenge(dailyDateKey), [dailyDateKey]);
 
   const eligibleSeasons = useMemo(() => {
+    if (fieldMode === "notables") {
+      return SEASONS.filter((season) => NOTABLE_PLAYER_IDS.has(season.playerId));
+    }
     if (yearMode === "all") return SEASONS;
     if (yearMode === "current") {
       return SEASONS.filter((season) => season.year === LATEST_YEAR);
@@ -1840,17 +1892,13 @@ export function StrokesGainedGame() {
     if (selectedYears.length === 0) return [];
     const years = new Set(selectedYears);
     return SEASONS.filter((season) => years.has(season.year));
-  }, [selectedYears, yearMode]);
+  }, [fieldMode, selectedYears, yearMode]);
 
   const eligiblePlayerNames = useMemo(
     () => Array.from(new Set(eligibleSeasons.map((season) => season.player))),
     [eligibleSeasons],
   );
 
-  const usedSeasonIds = useMemo(
-    () => new Set(assignments.map((assignment) => assignment.season.id)),
-    [assignments],
-  );
   const complete = assignments.length === CATEGORY_ORDER.length;
   const totalSg = totalSelectedSg(assignments);
   const simulation = useMemo(() => {
@@ -1887,6 +1935,7 @@ export function StrokesGainedGame() {
       }
 
       const next = getRandomPlayerSeason(eligibleSeasons, excludedIds);
+      setNeedsSpin(false);
       setCurrentSeason(undefined);
       setPhase("player");
       // In Current Year mode every season shares the same year, so the year
@@ -1939,6 +1988,7 @@ export function StrokesGainedGame() {
     if (!gameModeChosen || gameVariant !== "classic") return;
     setAssignments([]);
     setMulligans(0);
+    setNeedsSpin(false);
     startSpin(new Set());
     return clearSpinTimers;
   }, [clearSpinTimers, gameModeChosen, gameVariant, selectedYears, startSpin, yearMode]);
@@ -1956,6 +2006,12 @@ export function StrokesGainedGame() {
     setDailyRunId((value) => value + 1);
   }, [dailyChallenge.id]);
 
+  useEffect(() => {
+    if (fieldMode === "notables" && yearMode !== "all") {
+      setYearMode("all");
+    }
+  }, [fieldMode, yearMode]);
+
   const handleYearModeChange = (nextMode: YearMode) => {
     setYearMode(nextMode);
     if (nextMode === "filter" && selectedYears.length === 0) {
@@ -1972,17 +2028,25 @@ export function StrokesGainedGame() {
   };
 
   const handleAssign = (category: CategoryKey) => {
-    if (!currentSeason || phase !== "ready" || assignmentByCategory.has(category) || complete) {
+    if (
+      !currentSeason ||
+      phase !== "ready" ||
+      assignmentByCategory.has(category) ||
+      complete ||
+      needsSpin
+    ) {
       return;
     }
 
     const nextAssignments = [...assignments, { category, season: currentSeason }];
     setAssignments(nextAssignments);
+    setNeedsSpin(nextAssignments.length < CATEGORY_ORDER.length);
+  };
 
-    if (nextAssignments.length < CATEGORY_ORDER.length) {
-      const nextUsedIds = new Set([...usedSeasonIds, currentSeason.id]);
-      startSpin(nextUsedIds);
-    }
+  const handleStartSpin = () => {
+    if (!needsSpin || complete) return;
+    const nextUsedIds = new Set(assignments.map((assignment) => assignment.season.id));
+    startSpin(nextUsedIds);
   };
 
   const handleMulligan = (category: CategoryKey) => {
@@ -1991,6 +2055,7 @@ export function StrokesGainedGame() {
 
     setMulligans((count) => count + 1);
     setAssignments(remaining);
+    setNeedsSpin(false);
     const remainingUsedIds = new Set(remaining.map((assignment) => assignment.season.id));
     startSpin(remainingUsedIds);
   };
@@ -1999,6 +2064,7 @@ export function StrokesGainedGame() {
     clearSpinTimers();
     setAssignments([]);
     setMulligans(0);
+    setNeedsSpin(false);
     startSpin(new Set());
   };
 
@@ -2022,6 +2088,7 @@ export function StrokesGainedGame() {
     setDisplayYear("...");
     setPhase("player");
     setMulligans(0);
+    setNeedsSpin(false);
     setYearMode("current");
     setSelectedYears([LATEST_YEAR]);
   };
@@ -2106,6 +2173,10 @@ export function StrokesGainedGame() {
             pickNumber={Math.min(assignments.length + 1, 4)}
             complete={complete}
             showYear={yearMode !== "current"}
+            assignmentByCategory={assignmentByCategory}
+            needsSpin={needsSpin}
+            onAssign={handleAssign}
+            onStartSpin={handleStartSpin}
           />
 
           {statsMode === "show" && !complete ? (
@@ -2135,6 +2206,7 @@ export function StrokesGainedGame() {
           onMulligan={handleMulligan}
           disabled={phase !== "ready" || complete}
           mulligans={mulligans}
+          readOnly
         />
       </section>
 
@@ -2148,6 +2220,7 @@ export function StrokesGainedGame() {
             mulligans={mulligans}
             modeChips={buildModeChips(statsMode, yearMode, fieldMode, selectedYears)}
             onNewRound={resetGame}
+            suppressInitialScroll
           />
           <AssignmentStats assignments={assignments} />
         </>

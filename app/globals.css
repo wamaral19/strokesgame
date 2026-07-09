@@ -542,6 +542,55 @@ button {
   animation: reel-pulse 120ms linear infinite;
 }
 
+.classic-assignment-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 0 10px 10px;
+}
+
+.classic-assignment-slot {
+  display: grid;
+  gap: 8px;
+  min-height: 70px;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 250, 240, 0.76);
+  color: var(--brand-ink);
+  padding: 10px;
+  text-align: left;
+}
+
+.classic-assignment-slot:hover:not(:disabled) {
+  border-color: var(--brand-ink);
+  background: var(--surface-raised);
+}
+
+.classic-assignment-slot:disabled {
+  cursor: default;
+  opacity: 0.58;
+}
+
+.classic-assignment-slot strong {
+  font-family: var(--font-condensed);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.classic-spin-action {
+  position: relative;
+  z-index: 1;
+  padding: 0 10px 12px;
+}
+
+.classic-spin-action .primary-button {
+  width: 100%;
+}
+
 @keyframes reel-pulse {
   0% {
     transform: translateY(-1px);
