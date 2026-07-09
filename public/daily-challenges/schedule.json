@@ -1,0 +1,94 @@
+[
+  {
+    "id": "daily-2026-07-08",
+    "date": "2026-07-08",
+    "title": "Daily Challenge",
+    "items": [
+      {
+        "id": "2026-07-08-clue-1-tiger-woods",
+        "playerId": "tiger_woods",
+        "media": {
+          "kind": "image",
+          "title": "Tiger Woods.webp",
+          "src": "/daily-challenges/2026-07-08/tiger-woods.webp",
+          "alt": "Tiger Woods.webp"
+        }
+      },
+      {
+        "id": "2026-07-08-clue-2-kevin-na",
+        "playerId": "kevin_na",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "This guy made a 16 on a hole in a tour event."
+        }
+      },
+      {
+        "id": "2026-07-08-clue-3-bubba-watson",
+        "playerId": "bubba_watson",
+        "media": {
+          "kind": "image",
+          "title": "Bubba Watson.webp",
+          "src": "/daily-challenges/2026-07-08/bubba-watson.webp",
+          "alt": "Bubba Watson.webp"
+        }
+      },
+      {
+        "id": "2026-07-08-clue-4-ben-griffin",
+        "playerId": "ben_griffin",
+        "media": {
+          "kind": "image",
+          "title": "Ben Griffin Polo Flatlay GPT.png",
+          "src": "/daily-challenges/2026-07-08/ben-griffin-polo-flatlay-gpt.png",
+          "alt": "Ben Griffin Polo Flatlay GPT.png"
+        }
+      }
+    ]
+  },
+  {
+    "id": "daily-2026-07-09",
+    "date": "2026-07-09",
+    "title": "Daily Challenge",
+    "items": [
+      {
+        "id": "2026-07-09-clue-1-tiger-woods",
+        "playerId": "tiger_woods",
+        "media": {
+          "kind": "image",
+          "title": "Tiger Woods.webp",
+          "src": "/daily-challenges/2026-07-09/tiger-woods.webp",
+          "alt": "Tiger Woods.webp"
+        }
+      },
+      {
+        "id": "2026-07-09-clue-2-kevin-na",
+        "playerId": "kevin_na",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "This guy made a 16 on a hole in a tour event."
+        }
+      },
+      {
+        "id": "2026-07-09-clue-3-bubba-watson",
+        "playerId": "bubba_watson",
+        "media": {
+          "kind": "image",
+          "title": "Bubba Watson.webp",
+          "src": "/daily-challenges/2026-07-09/bubba-watson.webp",
+          "alt": "Bubba Watson.webp"
+        }
+      },
+      {
+        "id": "2026-07-09-clue-4-ben-griffin",
+        "playerId": "ben_griffin",
+        "media": {
+          "kind": "image",
+          "title": "Ben Griffin Polo Flatlay GPT.png",
+          "src": "/daily-challenges/2026-07-09/ben-griffin-polo-flatlay-gpt.png",
+          "alt": "Ben Griffin Polo Flatlay GPT.png"
+        }
+      }
+    ]
+  }
+]

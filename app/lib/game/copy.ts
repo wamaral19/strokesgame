@@ -19,6 +19,14 @@ export function fill(text: string, vars: Record<string, string>): string {
   return text.replace(/<(\w+)>/g, (match, key: string) => vars[key] ?? match);
 }
 
+// The regular-season templates supply their own article ("the <tournament>"),
+// so strip a leading "The " from event names ("The Players Championship") to
+// avoid "the The Players Championship". Major templates name majors in full and
+// do not use this.
+export function tournamentPhrase(name: string): string {
+  return name.replace(/^The\s+/, "");
+}
+
 // Natural-language phrase for a category, used to fill <category> placeholders.
 export const CATEGORY_PHRASE: Record<CategoryKey, string> = {
   offTee: "the driver",
@@ -68,24 +76,28 @@ export const REG_MISSED = [
 // Regular season — win / no-win leads (prepended to the rank tier)
 // ---------------------------------------------------------------------------
 
+// Fills <tournament> with the first win.
 export const REG_MULTI_WIN = [
-  "Winning once can be a heater. Winning more than once is a statement. For Tiger it was a great month, for most it's a great career. For you it's a great season.",
-  "Two trophies before the postseason means nobody gets to call this a fluke. You have been the answer more than once already.",
+  "It started at the <tournament>, and you did not stop there. Winning twice before the postseason is a statement.",
+  "The <tournament> was just one of them. Two trophies means nobody gets to call it a fluke.",
 ] as const;
 
+// Fills <tournament> with the win.
 export const REG_WIN_OUTSIDE = [
-  "Four great days can compensate for an otherwise okay season. The win takes care of the stress, but if you get hot at the right time you can make it a great season. Let's see what you've got.",
-  "The season was uneven, but a trophy changes the whole conversation. You already proved you can beat everyone for one week. The question is whether you can do it again when the lights get brighter.",
+  "Four great days at the <tournament> can cover an otherwise okay season. Get hot now and it can still be a great one.",
+  "The season was uneven, but the trophy at the <tournament> changes the conversation. Now prove it can travel.",
 ] as const;
 
+// Fills <tournament> with the win.
 export const REG_SINGLE_WIN = [
-  "That win changes the way the whole season feels. The question is not whether you can do it anymore. It is how often.",
-  "That trophy is heavy. You carried it all the way into the postseason conversation.",
+  "You got it done at the <tournament>. A win changes the whole season.",
+  "The <tournament> belongs on the resume now. Nobody can take the trophy back.",
 ] as const;
 
+// Fills <tournament> with the win.
 export const REG_FEAST_FAMINE = [
-  "When it was good, it was very good. When it was bad, it got expensive fast. The playoffs will find out which version packed the clubs.",
-  "This season had a highlight reel and a few pages you would rather skip. Volatility can win, but it can also send you home early.",
+  "The <tournament> showed how good it gets; the missed cuts showed the other side. The playoffs decide which version packed the clubs.",
+  "A highlight reel headlined by the <tournament>, plus a few pages to skip. Volatility can win or send you home.",
 ] as const;
 
 // No-win, at least one top-three finish, missed the playoffs. Fills <tournament>.
@@ -94,14 +106,16 @@ export const REG_NO_WIN_TOP3_OUTSIDE = [
   "The <tournament> showed what was possible, then the rest of the year showed how thin the margin can be. Close was not quite enough.",
 ] as const;
 
+// Fills <tournament> with the player's best finish (the runner-up event).
 export const REG_NO_WIN_RUNNER_UP = [
-  "You almost got in the win column this year. A runner up at this level is great, and you have a chance coming into the most important part of the year. Good luck.",
-  "No trophy, but you got close enough to feel the heat. Let's hope you don't melt in the Playoffs.",
+  "You almost got in the win column at the <tournament>. A runner-up still gives you a chance.",
+  "No trophy, but the <tournament> got you close enough to feel the heat. Don't melt in the playoffs.",
 ] as const;
 
+// Fills <tournament> with the player's best finish.
 export const REG_CONSISTENT_TOP10 = [
-  "You kept finding the first page of the leaderboard, but never quite the last handshake. The floor is real. Now you need the ceiling to show up.",
-  "There is a lot to like in a season full of top 10s. There is also one empty spot on the resume that still bothers you.",
+  "You kept finding the first page of the leaderboard, the <tournament> included, but never the last handshake. The floor is real.",
+  "Plenty to like in a season full of top 10s like the <tournament>. The empty win column still bothers you.",
 ] as const;
 
 export const REG_STAT_MONSTER = [
@@ -237,8 +251,8 @@ export const SG_ONE_CARRIES = [
 ] as const;
 
 export const SG_ONE_SINKS = [
-  "The difference between advancing and packing up was hiding in <category>. That part of the game picked a bad week to disappear.",
-  "You can survive a lot in the playoffs, but not when <category> starts handing shots back.",
+  "The difference was hiding in <category>. Bad week for that part to disappear.",
+  "You can survive a lot in the playoffs. Not when <category> gives shots back.",
 ] as const;
 
 // ---------------------------------------------------------------------------

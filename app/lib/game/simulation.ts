@@ -31,6 +31,7 @@ import {
   SG_WORSE,
   fill,
   pick,
+  tournamentPhrase,
 } from "./copy";
 import { FEDEX_PLAYOFF_SCHEDULE, PREMIUM_2026_SCHEDULE } from "./schedule";
 import { createRandom, randomBetween, randomNormal } from "./random";
@@ -616,7 +617,32 @@ function resolveFinish(
   // requires a genuinely poor week, so elite builds almost never miss.
   const madeCut =
     !eventHasCut(event.kind) || position <= Math.round(size * 0.62);
-  return { position, madeCut };
+  return { position, madeCut, tied: isTiedFinish(playerSg, size, event, random) };
+}
+
+// Real leaderboards are full of ties, but not evenly: solo finishes are common
+// out on the low-scoring tail (near the lead, where finishers are sparse) and
+// rare in the bunched middle of the pack. We model a finish as tied when at
+// least one other player posts the same score. The field's weekly scores are
+// ~Normal(fieldMean, FIELD_SPREAD), so the local density of finishers at the
+// player's score is (size - 1) * pdf(playerSg). Counting the others that land
+// within ~one stroke (≈0.28 SG/round counts as the "same" total score) gives
+// the expected number of tie-mates; the finish is solo only if that Poisson
+// count comes up zero.
+const TIE_BIN_SG = 0.28;
+
+function isTiedFinish(
+  playerSg: number,
+  size: number,
+  event: ScheduleEvent,
+  random: () => number,
+) {
+  const z = (playerSg - fieldMean(event)) / FIELD_SPREAD;
+  const density = (0.3989422804014327 * Math.exp((-z * z) / 2)) / FIELD_SPREAD;
+  const meanTieMates = (size - 1) * TIE_BIN_SG * density;
+  // Poisson probability of at least one other player on the same score.
+  const soloProb = Math.exp(-meanTieMates);
+  return random() >= soloProb;
 }
 
 function simulateEvent(
@@ -638,12 +664,13 @@ function simulateEvent(
   const courseFit = randomNormal(random) * COURSE_FIT_SD;
   const playerSg = totalSg + weekSg + courseFit;
 
-  const { position, madeCut } = resolveFinish(playerSg, event, random);
+  const { position, madeCut, tied } = resolveFinish(playerSg, event, random);
 
   return {
     event,
     strokes: Number(playerSg.toFixed(2)),
     position: madeCut ? position : 0,
+    tied: madeCut && tied,
     madeCut,
     fedExPoints: madeCut ? positionToPoints(position, event) : 0,
     earnings: madeCut ? positionToPayout(position, event.purse) : 0,
@@ -682,13 +709,14 @@ function simulatePlayoffEvent(
   });
 
   const weekSg = categories.reduce((sum, item) => sum + item.weekValue, 0);
-  const { position } = resolveFinish(weekSg, event, random);
+  const { position, tied } = resolveFinish(weekSg, event, random);
 
   return {
     event,
     categories,
     weekSg: round2(weekSg),
     position,
+    tied,
     fedExPoints: positionToPoints(position, event),
     earnings: positionToPayout(position, event.purse),
   };
@@ -947,24 +975,34 @@ function regularSeasonWriteup(
   const rest = pick(rankPool, seed);
 
   const leadSeed = seed >> 2;
+  // The specific tournament to name in the lead: the win for win-based leads,
+  // otherwise the player's best finish for top-finish leads.
+  const winEvent = winNames[0] ? tournamentPhrase(winNames[0]) : "";
+  const bestEvent = topFinishEvent ? tournamentPhrase(topFinishEvent) : "";
   let lead = "";
   if (winCount >= 1 && missedCuts >= 3 && hasTop3) {
-    lead = pick(REG_FEAST_FAMINE, leadSeed);
+    lead = fill(pick(REG_FEAST_FAMINE, leadSeed), { tournament: winEvent });
   } else if (winCount >= 2) {
-    lead = pick(REG_MULTI_WIN, leadSeed);
+    lead = fill(pick(REG_MULTI_WIN, leadSeed), { tournament: winEvent });
   } else if (winCount === 1) {
-    lead =
+    lead = fill(
       rank > 30 || totalSg < 0.3
         ? pick(REG_WIN_OUTSIDE, leadSeed)
-        : pick(REG_SINGLE_WIN, leadSeed);
+        : pick(REG_SINGLE_WIN, leadSeed),
+      { tournament: winEvent },
+    );
   } else if (!madePlayoffs && hasTop3 && topFinishEvent) {
     lead = fill(pick(REG_NO_WIN_TOP3_OUTSIDE, leadSeed), {
-      tournament: topFinishEvent,
+      tournament: bestEvent,
     });
-  } else if (hasRunnerUp) {
-    lead = pick(REG_NO_WIN_RUNNER_UP, leadSeed);
-  } else if (top10Count >= 3) {
-    lead = pick(REG_CONSISTENT_TOP10, leadSeed);
+  } else if (hasRunnerUp && topFinishEvent) {
+    lead = fill(pick(REG_NO_WIN_RUNNER_UP, leadSeed), {
+      tournament: bestEvent,
+    });
+  } else if (top10Count >= 3 && topFinishEvent) {
+    lead = fill(pick(REG_CONSISTENT_TOP10, leadSeed), {
+      tournament: bestEvent,
+    });
   } else if (totalSg >= 2.0) {
     lead = pick(REG_STAT_MONSTER, leadSeed);
   } else if (rank <= 30 && totalSg < 0.5) {
@@ -1212,6 +1250,7 @@ export function simulateSeason(
       categories: stage.categories,
       weekSg: stage.weekSg,
       position: stage.position,
+      tied: stage.tied,
       fedExPoints: stagePoints,
       earnings: stage.earnings,
       rankBefore,
