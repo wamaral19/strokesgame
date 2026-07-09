@@ -572,6 +572,13 @@ button {
   opacity: 0.58;
 }
 
+.classic-assignment-slot.is-pending {
+  border-color: var(--brand-ink);
+  background: var(--surface-raised);
+  box-shadow: inset 0 0 0 1px var(--brand-ink);
+  opacity: 1;
+}
+
 .classic-assignment-slot strong {
   font-family: var(--font-condensed);
   font-size: 0.8rem;
