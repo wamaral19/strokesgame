@@ -57,6 +57,12 @@ const AVAILABLE_YEARS = Array.from(new Set(SEASONS.map((season) => season.year))
 );
 const LATEST_YEAR = AVAILABLE_YEARS[0];
 
+// Reveal-rail spin timing for a sub-4/4 daily run: each category flickers for
+// DAILY_SPIN_STEP_MS before settling, and the season playback (with its FedEx
+// Cup popup) waits DAILY_PLAYBACK_DELAY_MS after the last category lands.
+const DAILY_SPIN_STEP_MS = 500;
+const DAILY_PLAYBACK_DELAY_MS = 1500;
+
 const ZONE_META: Record<CategoryKey, { className: string; label: string }> = {
   offTee: { className: "zone--driving", label: "Off the Tee" },
   approach: { className: "zone--approach", label: "Approach" },
@@ -199,6 +205,48 @@ function ResetConfirmDialog({
   );
 }
 
+// A centered modal that surfaces the game's "next step" so the CTA to advance is
+// impossible to miss. Its button performs the action directly — one tap, no
+// intermediate "open then act" step — and it auto-focuses so Enter also works.
+function NextStepDialog({
+  eyebrow,
+  title,
+  detail,
+  actionLabel,
+  onAction,
+}: {
+  eyebrow?: string;
+  title: string;
+  detail?: string;
+  actionLabel: string;
+  onAction: () => void;
+}) {
+  const actionRef = useRef<HTMLButtonElement | null>(null);
+
+  useEffect(() => {
+    actionRef.current?.focus();
+  }, []);
+
+  return (
+    <div
+      className="reset-confirm next-step"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="next-step-title"
+    >
+      <div className="reset-confirm__backdrop" />
+      <div className="reset-confirm__panel next-step__panel">
+        {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
+        <h2 id="next-step-title">{title}</h2>
+        {detail ? <p className="next-step__detail">{detail}</p> : null}
+        <button type="button" className="primary-button" onClick={onAction} ref={actionRef}>
+          {actionLabel}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function ModeOption({
   active,
   disabled,
@@ -259,9 +307,17 @@ function GameModeChooser({
   const canConfirm = yearMode !== "filter" || selectedYears.length > 0;
 
   useEffect(() => {
-    if (showClassicOptions) {
-      confirmRef.current?.focus();
+    if (!showClassicOptions) return;
+    // Only auto-focus on pointer devices. On touch, focusing the confirm button
+    // (which sits at the bottom of the panel) scrolls the fixed modal to reveal
+    // it — on first launch the mobile address bar makes the viewport short enough
+    // that the panel overflows, so the scroll jumps the modal out from under the
+    // user's tap. The first "Start Your Round" tap then misses and the popup
+    // appears to require a second pass. See feat/next-step-popups.
+    if (typeof window !== "undefined" && !window.matchMedia("(pointer: fine)").matches) {
+      return;
     }
+    confirmRef.current?.focus();
   }, [showClassicOptions]);
 
   const chooseDaily = () => {
@@ -442,6 +498,7 @@ function SpinnerPanel({
   assignmentByCategory,
   needsSpin,
   pendingCategory,
+  statsReveal,
   onAssign,
   onStartSpin,
 }: {
@@ -454,6 +511,7 @@ function SpinnerPanel({
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   needsSpin: boolean;
   pendingCategory?: CategoryKey;
+  statsReveal?: React.ReactNode;
   onAssign: (category: CategoryKey) => void;
   onStartSpin: () => void;
 }) {
@@ -478,6 +536,7 @@ function SpinnerPanel({
           </div>
         ) : null}
       </div>
+      {statsReveal}
       <div className="classic-assignment-grid" aria-label="Assign current player to category">
         {CATEGORY_ORDER.map((category) => {
           const filled = assignmentByCategory.has(category);
@@ -637,6 +696,7 @@ function CourseBoard({
   disabled,
   mulligans,
   readOnly,
+  totalSg,
 }: {
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   onAssign: (category: CategoryKey) => void;
@@ -644,6 +704,7 @@ function CourseBoard({
   disabled: boolean;
   mulligans: number;
   readOnly?: boolean;
+  totalSg: number;
 }) {
   return (
     <section className="course-board" aria-label="Golf category board">
@@ -662,6 +723,12 @@ function CourseBoard({
             readOnly={readOnly}
           />
         ))}
+      </div>
+      {/* Compact total that rides on top of the course art on mobile; hidden on
+          desktop, where the score strip in the left rail carries the total. */}
+      <div className="course-board__total" aria-label="Total strokes gained">
+        <span className="eyebrow">Total SG</span>
+        <strong className={totalSg < 0 ? "negative" : ""}>{formatSg(totalSg)}</strong>
       </div>
       <div className="mulligan-rail" aria-label={`Mulligans used: ${mulligans}`}>
         {Array.from({ length: mulligans }).map((_, index) => (
@@ -746,19 +813,11 @@ function PlayoffStageBlock({
   const order = CATEGORY_ORDER;
   const revealCount = Math.min(settledCount + 1, order.length);
   const summaryReady = settledCount >= order.length;
-  const continueRef = useRef<HTMLButtonElement | null>(null);
 
   const byCategory = useMemo(
     () => new Map(stage.categories.map((item) => [item.category, item])),
     [stage],
   );
-
-  // Once the stats settle, pull the CTA into view so the next step is obvious.
-  useEffect(() => {
-    if (summaryReady && isCurrent) {
-      scrollIntoViewSmooth(continueRef.current, "nearest");
-    }
-  }, [summaryReady, isCurrent]);
 
   return (
     <section className="playoff-block" aria-label={stage.event.name} ref={blockRef}>
@@ -819,17 +878,16 @@ function PlayoffStageBlock({
             <p>{stage.writeup.detail}</p>
             {stage.sgNote ? <p className="playoff-writeup__note">{stage.sgNote}</p> : null}
           </div>
-          {isCurrent ? (
-            <button
-              type="button"
-              className="primary-button"
-              onClick={onContinue}
-              ref={continueRef}
-            >
-              {continueLabel}
-            </button>
-          ) : null}
         </div>
+      ) : null}
+
+      {isCurrent && summaryReady ? (
+        <NextStepDialog
+          eyebrow={stage.writeup.label}
+          title={stage.writeup.headline}
+          actionLabel={continueLabel}
+          onAction={onContinue}
+        />
       ) : null}
     </section>
   );
@@ -872,9 +930,12 @@ function RegularSeasonBlock({
         <p>{summary.writeup.detail}</p>
       </div>
       {isCurrent ? (
-        <button type="button" className="primary-button" onClick={onContinue}>
-          {summary.madePlayoffs ? "Enter the FedEx Cup Playoffs" : "See the final standings"}
-        </button>
+        <NextStepDialog
+          eyebrow={summary.writeup.label}
+          title={summary.madePlayoffs ? "You're in the playoffs" : "Your season is over"}
+          actionLabel={summary.madePlayoffs ? "Enter the FedEx Cup Playoffs" : "See the final standings"}
+          onAction={onContinue}
+        />
       ) : null}
     </section>
   );
@@ -1536,6 +1597,18 @@ function bestSeasonForPlayerCategory(playerId: string, category: CategoryKey) {
   );
 }
 
+function playerSeasons(playerId: string) {
+  return SEASONS.filter((season) => season.playerId === playerId);
+}
+
+// Pick any season from the player's career at random. Used when the guess falls
+// short of 4/4 — the reward is a random year rather than their statistical best.
+function randomSeasonForPlayer(playerId: string) {
+  const seasons = playerSeasons(playerId);
+  if (seasons.length === 0) return undefined;
+  return seasons[Math.floor(Math.random() * seasons.length)];
+}
+
 function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
   const ideal = new Map<string, CategoryKey>();
   if (items.length !== CATEGORY_ORDER.length) return ideal;
@@ -1596,18 +1669,15 @@ function DailyChallengeGame({
   const currentItem = challenge.items[currentIndex] ?? challenge.items[0];
   const complete = assignments.length === CATEGORY_ORDER.length;
 
-  const revealedAssignments = useMemo<SlotAssignment[]>(() => {
-    if (!complete) return [];
-    return assignments
-      .map((assignment) => {
-        const season = bestSeasonForPlayerCategory(
-          assignment.item.playerId,
-          assignment.category,
-        );
-        return season ? { category: assignment.category, season } : undefined;
-      })
-      .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
-  }, [assignments, complete]);
+  // The resolved season behind each slot, decided once at reveal. A perfect 4/4
+  // run earns each player's best year in the assigned category; anything less
+  // gets a random year from that player's career (spun in below).
+  const [resolvedAssignments, setResolvedAssignments] = useState<SlotAssignment[]>([]);
+  // How many category tiles in the reveal rail have finished spinning. Each one
+  // spins for 500ms before settling and handing off to the next.
+  const [spinSettled, setSpinSettled] = useState(0);
+  // Forces the rail to re-render mid-spin so the flickering values change.
+  const [spinTick, setSpinTick] = useState(0);
 
   const score = useMemo(() => {
     return assignments.reduce((count, assignment) => {
@@ -1616,6 +1686,16 @@ function DailyChallengeGame({
   }, [assignments, idealByItemId]);
 
   const rating = dailyRating(score);
+  const isBallKnower = score === CATEGORY_ORDER.length;
+
+  // What the run would have scored had every random year been the player's best
+  // year in the assigned category. Shown as the target to beat when short of 4/4.
+  const idealTotal = useMemo(() => {
+    return assignments.reduce((sum, assignment) => {
+      const best = bestSeasonForPlayerCategory(assignment.item.playerId, assignment.category);
+      return sum + (best ? best.sg[assignment.category] : 0);
+    }, 0);
+  }, [assignments]);
 
   const move = (direction: -1 | 1) => {
     setCurrentIndex(
@@ -1648,15 +1728,84 @@ function DailyChallengeGame({
   // Revealing is an explicit, confirmed step: the player taps Submit once all
   // four slots are filled. No auto-lock, so they can re-shuffle picks first.
   const reveal = useCallback(() => {
-    if (!complete || revealedAssignments.length !== CATEGORY_ORDER.length) return;
+    if (!complete) return;
+    const ballKnower =
+      assignments.reduce(
+        (count, assignment) =>
+          count + (idealByItemId.get(assignment.item.id) === assignment.category ? 1 : 0),
+        0,
+      ) === CATEGORY_ORDER.length;
+    const resolved = assignments
+      .map((assignment) => {
+        const season = ballKnower
+          ? bestSeasonForPlayerCategory(assignment.item.playerId, assignment.category)
+          : randomSeasonForPlayer(assignment.item.playerId);
+        return season ? { category: assignment.category, season } : undefined;
+      })
+      .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
+    if (resolved.length !== CATEGORY_ORDER.length) return;
+    // A perfect run lands settled; a random-year run spins the rail in below.
+    setSpinSettled(ballKnower ? CATEGORY_ORDER.length : 0);
+    setResolvedAssignments(resolved);
     setPhase("revealed");
-    onComplete(revealedAssignments);
-  }, [complete, onComplete, revealedAssignments]);
+    // A perfect run has nothing to spin, so hand off to the season playback (and
+    // its FedEx Cup popup) right away. A random-year run defers that until the
+    // spin animation finishes — see the spin effect below.
+    if (ballKnower) onComplete(resolved);
+  }, [assignments, complete, idealByItemId, onComplete]);
 
   useEffect(() => {
     if (phase !== "revealed") return;
     scrollIntoViewSmooth(resultRef.current, "nearest");
   }, [phase]);
+
+  // Drive the reveal-rail spin for a sub-4/4 run: each category flickers through
+  // random years for DAILY_SPIN_STEP_MS, then settles before the next one starts.
+  // Once the last one lands, wait DAILY_PLAYBACK_DELAY_MS before surfacing the
+  // season playback (and its FedEx Cup popup) so the spin gets to breathe.
+  useEffect(() => {
+    if (phase !== "revealed" || isBallKnower || resolvedAssignments.length === 0) return;
+    const timers: number[] = [];
+    const flicker = window.setInterval(() => setSpinTick((tick) => tick + 1), 55);
+    timers.push(flicker);
+    CATEGORY_ORDER.forEach((_, index) => {
+      const settle = window.setTimeout(() => {
+        setSpinSettled(index + 1);
+        if (index === CATEGORY_ORDER.length - 1) window.clearInterval(flicker);
+      }, (index + 1) * DAILY_SPIN_STEP_MS);
+      timers.push(settle);
+    });
+    const surfacePlayback = window.setTimeout(() => {
+      onComplete(resolvedAssignments);
+    }, CATEGORY_ORDER.length * DAILY_SPIN_STEP_MS + DAILY_PLAYBACK_DELAY_MS);
+    timers.push(surfacePlayback);
+    return () => {
+      timers.forEach((timer) => {
+        window.clearTimeout(timer);
+        window.clearInterval(timer);
+      });
+    };
+  }, [phase, isBallKnower, resolvedAssignments, onComplete]);
+
+  // Per-category rows for the reveal rail. A settled row shows the resolved
+  // season; the one currently spinning flickers through the player's real
+  // seasons; rows still queued read "--" until their turn comes up.
+  const railRows = CATEGORY_ORDER.map((category, index) => {
+    const assignment = resolvedAssignments.find((item) => item.category === category);
+    const settled = isBallKnower || index < spinSettled;
+    const spinning = !isBallKnower && index === spinSettled;
+    let displaySeason = assignment?.season;
+    if (spinning && assignment) {
+      const pool = playerSeasons(assignment.season.playerId);
+      displaySeason = pool.length > 0 ? pool[(spinTick + index) % pool.length] : assignment.season;
+    }
+    const shown = (settled || spinning) && displaySeason ? displaySeason : undefined;
+    return { category, assignment, settled, spinning, season: shown };
+  });
+  const displayedTotal = railRows.reduce(
+    (sum, row) => sum + (row.season ? row.season.sg[row.category] : 0),
+    0,
+  );
 
   return (
     <section className="daily-challenge" aria-label={challenge.title}>
@@ -1736,13 +1885,15 @@ function DailyChallengeGame({
                       <MediaCard media={item.media} compact />
                       <span className="daily-tile__reveal">
                         <strong>{playerName}</strong>
-                        <span>
-                          {pickedSeason && picked
-                            ? `${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
-                                pickedSeason.sg[picked.category],
-                              )}`
-                            : "No season"}
-                        </span>
+                        {/* Only a perfect run earns the year + SG readout here.
+                            A random-year run reveals the name only. */}
+                        {isBallKnower && pickedSeason && picked ? (
+                          <span>
+                            {`${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
+                              pickedSeason.sg[picked.category],
+                            )}`}
+                          </span>
+                        ) : null}
                       </span>
                       {picked && ideal ? (
                         <span
@@ -1819,46 +1970,50 @@ function DailyChallengeGame({
             <div className="daily-result" ref={resultRef}>
               <div className="daily-result__head">
                 <span className="eyebrow">{rating}</span>
-                <p>{score}/4 ideal slots</p>
+                <p>
+                  {isBallKnower
+                    ? "4/4 — You get the best year of their career in the SG Category"
+                    : `${score}/4 Ideal Categories — you get a random year from their career. Get them all right and get their best year.`}
+                </p>
               </div>
               <div className="playoff-stat-rail daily-profile-rail" aria-label="Daily player profile">
-                {CATEGORY_ORDER.map((category) => {
-                  const assignment = revealedAssignments.find((item) => item.category === category);
-                  const meta = CATEGORY_META[category];
-                  const value = assignment?.season.sg[category];
+                {railRows.map((row) => {
+                  const meta = CATEGORY_META[row.category];
+                  const value = row.season?.sg[row.category];
                   return (
-                    <div className="playoff-stat playoff-stat--up daily-profile-stat" key={category}>
+                    <div
+                      className={`playoff-stat playoff-stat--up daily-profile-stat ${
+                        row.spinning ? "is-spinning" : ""
+                      }`}
+                      key={row.category}
+                    >
                       <span className="eyebrow">{meta.shortLabel}</span>
                       <strong className="playoff-stat__value">
                         {value !== undefined ? formatSg(value) : "--"}
                       </strong>
                       <span className="playoff-stat__meta">
-                        {assignment
-                          ? `${assignment.season.player} · ${assignment.season.year}`
+                        {row.assignment
+                          ? row.season
+                            ? `${row.assignment.season.player} · ${row.season.year}`
+                            : row.assignment.season.player
                           : "unassigned"}
                       </span>
                     </div>
                   );
                 })}
-                {(() => {
-                  const total = revealedAssignments.reduce(
-                    (sum, item) => sum + item.season.sg[item.category],
-                    0,
-                  );
-                  return (
-                    <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
-                      <span className="eyebrow">SG Total</span>
-                      <strong
-                        className={`playoff-stat__value ${
-                          total < 0 ? "playoff-stat__value--negative" : ""
-                        }`}
-                      >
-                        {formatSg(total)}
-                      </strong>
-                      <span className="playoff-stat__meta">All categories</span>
-                    </div>
-                  );
-                })()}
+                <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
+                  <span className="eyebrow">SG Total</span>
+                  <strong
+                    className={`playoff-stat__value ${
+                      displayedTotal < 0 ? "playoff-stat__value--negative" : ""
+                    }`}
+                  >
+                    {formatSg(displayedTotal)}
+                  </strong>
+                  <span className="playoff-stat__meta">
+                    {isBallKnower ? "All categories" : `Ideal: ${formatSg(idealTotal)}`}
+                  </span>
+                </div>
               </div>
             </div>
           ) : null}
@@ -2202,15 +2357,16 @@ export function StrokesGainedGame() {
             assignmentByCategory={assignmentByCategory}
             needsSpin={needsSpin}
             pendingCategory={pendingCategory}
+            statsReveal={
+              statsMode === "show" && !complete ? (
+                <div className="stat-reveal" aria-label="Current player stats">
+                  <StatList season={phase === "ready" ? currentSeason : undefined} />
+                </div>
+              ) : null
+            }
             onAssign={handleAssign}
             onStartSpin={handleStartSpin}
           />
-
-          {statsMode === "show" && !complete ? (
-            <div className="stat-reveal" aria-label="Current player stats">
-              <StatList season={phase === "ready" ? currentSeason : undefined} />
-            </div>
-          ) : null}
 
           <div className="score-strip compact" aria-label="Run status">
             <div>
@@ -2234,6 +2390,7 @@ export function StrokesGainedGame() {
           disabled={phase !== "ready" || complete}
           mulligans={mulligans}
           readOnly
+          totalSg={totalSg}
         />
       </section>
 

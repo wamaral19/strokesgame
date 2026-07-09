@@ -633,6 +633,12 @@ button {
   padding: 14px;
 }
 
+/* The on-board total only appears in the mobile overlay; on desktop the score
+   strip in the left rail carries the total, so keep it out of the grid here. */
+.course-board__total {
+  display: none;
+}
+
 .mulligan-rail {
   display: flex;
   flex-direction: column;
@@ -1007,6 +1013,32 @@ button {
   gap: 10px;
 }
 
+.next-step {
+  z-index: 130;
+}
+
+.next-step__panel {
+  gap: 18px;
+  max-width: 420px;
+  text-align: center;
+  justify-items: center;
+}
+
+.next-step__panel .eyebrow {
+  color: var(--brand-accent, #1a7f4b);
+}
+
+.next-step__detail {
+  margin: 0;
+  color: rgba(26, 26, 26, 0.72);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.next-step__panel .primary-button {
+  width: 100%;
+}
+
 .how-to-play__panel {
   max-width: 620px;
 }
@@ -1218,6 +1250,15 @@ button {
   border: 1px solid var(--brand-ink);
   background: var(--surface-raised);
   padding: 14px;
+}
+
+/* When the reveal lives inside the spinner panel (Show Stats, between the
+   player reel and the assignment grid), inset it to align with the reels and
+   slots and lift it above the panel's dotted overlay. */
+.spinner-panel > .stat-reveal {
+  position: relative;
+  z-index: 1;
+  margin: 0 10px 10px;
 }
 
 /* No header inside the reveal box, so let the stats sit flush against the top
@@ -1632,6 +1673,9 @@ button {
   display: grid;
   justify-items: start;
   width: 100%;
+  /* Tighten the space between the rating subtext and the category rail — the
+     shared 18px gap above leaves too much air here. */
+  gap: 6px;
 }
 
 .daily-result__head {
@@ -1684,6 +1728,14 @@ button {
 /* A negative overall total reads red even against the dark green tile. */
 .daily-profile-stat.daily-profile-stat--total .playoff-stat__value--negative {
   color: #ff6b60;
+}
+
+/* The category tile mid-spin: its SG number and year blur and pulse like the
+   spinner reels until it settles on the random year. */
+.daily-profile-stat.is-spinning .playoff-stat__value,
+.daily-profile-stat.is-spinning .playoff-stat__meta {
+  filter: blur(0.7px);
+  animation: reel-pulse 120ms linear infinite;
 }
 
 @media (max-width: 720px) {
@@ -2271,15 +2323,16 @@ button {
     text-overflow: ellipsis;
   }
 
-  /* Overlay the selection boxes on top of the course drawing instead of
-     stacking them beside/below it. The image becomes a faded backdrop that
-     fills the whole board while the zones sit directly on top. */
+  /* Compact selection board: a 2×2 grid of picks with the total below, all
+     overlaid on the course drawing so the whole thing reads as one tight card
+     instead of a tall stack of boxes. */
   .course-board {
     position: relative;
     display: flex;
     flex-direction: column;
-    min-height: 560px;
-    padding: 14px;
+    gap: 8px;
+    min-height: 0;
+    padding: 10px;
   }
 
   .course-board__art {
@@ -2298,31 +2351,97 @@ button {
     object-position: center;
   }
 
-  /* Let the rail stretch to fill the board so the four zones are spread
-     evenly from the very top to the bottom of the course art. */
   .course-zone-rail {
     position: relative;
     z-index: 1;
-    grid-template-columns: 1fr;
-    grid-template-rows: repeat(4, 1fr);
-    flex: 1;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: 8px;
     width: 100%;
   }
 
   .mulligan-rail {
     position: relative;
     z-index: 1;
-    margin-top: 12px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 2px;
   }
 
+  .mulligan-rail__stamp {
+    width: 52px;
+  }
+
+  /* Compact each pick down to just the essentials: label, name, value. */
   .course-zone {
     min-height: 0;
-    padding: 10px;
+    gap: 4px;
+    padding: 8px 9px;
     background: rgba(255, 250, 240, 0.97);
   }
 
   .course-zone--filled {
     background: #fffaf0;
+  }
+
+  .course-zone__label,
+  .course-zone__state {
+    font-size: 0.64rem;
+    letter-spacing: 0.1em;
+  }
+
+  .course-zone__player {
+    gap: 2px;
+  }
+
+  .course-zone__player strong {
+    font-size: 0.98rem;
+    line-height: 1.02;
+  }
+
+  .course-zone__meta span,
+  .course-zone__meta em {
+    font-size: 0.9rem;
+  }
+
+  .course-zone__empty {
+    min-height: 30px;
+  }
+
+  .mulligan-button {
+    padding: 3px 6px;
+    font-size: 0.56rem;
+  }
+
+  /* Total SG tile riding on the course art, matching the pick grid width. */
+  .course-board__total {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1px solid var(--brand-ink);
+    background: #fffaf0;
+    padding: 8px 12px;
+  }
+
+  .course-board__total strong {
+    font-family: var(--font-condensed);
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--brand-deep);
+  }
+
+  .course-board__total strong.negative {
+    color: var(--brand-flag);
+  }
+
+  /* The board now carries the total, so drop the duplicate score strip. */
+  .score-strip.compact {
+    display: none;
   }
 
   .assignment-stats {
