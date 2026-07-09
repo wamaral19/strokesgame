@@ -27,7 +27,7 @@ const gemunuLibre = Gemunu_Libre({
 });
 
 export const metadata: Metadata = {
-  title: "Strokes Gained Builder | Tour Pro Shop",
+  title: "Strokes Game - Build a golfer, win the FedEx Cup",
   description:
     "Draft PGA Tour player seasons into strokes gained categories, then simulate a premium schedule.",
 };

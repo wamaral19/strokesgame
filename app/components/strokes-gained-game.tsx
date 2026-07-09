@@ -1514,9 +1514,8 @@ function DailyChallengeGame({
   onComplete: (assignments: SlotAssignment[]) => void;
   onRestart: () => void;
 }) {
-  const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("browse");
+  const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("assign");
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [selectedItemId, setSelectedItemId] = useState(challenge.items[0]?.id ?? "");
   const [assignments, setAssignments] = useState<DailyTileAssignment[]>([]);
 
   const playerNameByItemId = useMemo(() => {
@@ -1530,14 +1529,7 @@ function DailyChallengeGame({
 
   const idealByItemId = useMemo(() => optimalCategoryByDailyItem(challenge.items), [challenge]);
 
-  const assignmentByCategory = useMemo(
-    () => new Map(assignments.map((assignment) => [assignment.category, assignment])),
-    [assignments],
-  );
-
   const currentItem = challenge.items[currentIndex] ?? challenge.items[0];
-  const selectedItem =
-    challenge.items.find((item) => item.id === selectedItemId) ?? challenge.items[0];
   const complete = assignments.length === CATEGORY_ORDER.length;
 
   const revealedAssignments = useMemo<SlotAssignment[]>(() => {
@@ -1562,21 +1554,31 @@ function DailyChallengeGame({
   const rating = dailyRating(score);
 
   const move = (direction: -1 | 1) => {
-    setCurrentIndex((index) => {
-      const next = (index + direction + challenge.items.length) % challenge.items.length;
-      setSelectedItemId(challenge.items[next].id);
-      return next;
-    });
+    setCurrentIndex(
+      (index) => (index + direction + challenge.items.length) % challenge.items.length,
+    );
   };
 
-  const assignSelected = (category: CategoryKey) => {
-    if (!selectedItem || phase === "revealed") return;
-    setAssignments((current) => [
-      ...current.filter(
-        (assignment) => assignment.category !== category && assignment.item.id !== selectedItem.id,
-      ),
-      { category, item: selectedItem },
-    ]);
+  // Assign a strokes-gained category to a clue. Each category lives on exactly
+  // one clue and each clue holds exactly one category, so placing a category
+  // pulls it off whatever clue held it and clears the target clue's prior pick.
+  // Tapping a clue's already-active category clears it.
+  const assignCategory = (item: DailyChallengeItem, category: CategoryKey) => {
+    if (phase === "revealed") return;
+    setAssignments((current) => {
+      const isActive = current.some(
+        (assignment) => assignment.item.id === item.id && assignment.category === category,
+      );
+      if (isActive) {
+        return current.filter((assignment) => assignment.item.id !== item.id);
+      }
+      return [
+        ...current.filter(
+          (assignment) => assignment.category !== category && assignment.item.id !== item.id,
+        ),
+        { category, item },
+      ];
+    });
   };
 
   const reveal = useCallback(() => {
@@ -1629,7 +1631,7 @@ function DailyChallengeGame({
               {currentIndex + 1}/{challenge.items.length}
             </span>
             <button type="button" className="primary-button" onClick={() => setPhase("assign")}>
-              Assign Slots
+              Back to Assignment
             </button>
           </div>
         </div>
@@ -1637,28 +1639,39 @@ function DailyChallengeGame({
 
       {phase !== "browse" ? (
         <>
-          <div className="daily-assignment">
-            <div className="daily-tile-grid" aria-label="Daily clue tiles">
-              {challenge.items.map((item, index) => {
-                const tileNumber = index + 1;
-                const ideal = idealByItemId.get(item.id);
-                const picked = assignments.find((assignment) => assignment.item.id === item.id);
-                const pickedSeason = picked
-                  ? bestSeasonForPlayerCategory(item.playerId, picked.category)
-                  : undefined;
-                const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
-                return (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className={`daily-tile ${selectedItemId === item.id ? "is-selected" : ""} ${
-                      phase === "revealed" ? "is-revealed" : ""
-	                    }`}
-	                    onClick={() => setSelectedItemId(item.id)}
-	                  >
-	                    <span className="daily-tile__number">{tileNumber}</span>
-	                    <MediaCard media={item.media} compact />
-                    {phase === "revealed" ? (
+          {phase === "assign" ? (
+            <div className="daily-assign-bar">
+              <span>{assignments.length}/4 assigned — tap a category on each clue.</span>
+              <button
+                type="button"
+                className="ghost-button"
+                onClick={() => setPhase("browse")}
+              >
+                Expand Images
+              </button>
+            </div>
+          ) : null}
+
+          <div className="daily-tile-grid" aria-label="Daily clue tiles">
+            {challenge.items.map((item, index) => {
+              const tileNumber = index + 1;
+              const ideal = idealByItemId.get(item.id);
+              const picked = assignments.find((assignment) => assignment.item.id === item.id);
+              const pickedSeason = picked
+                ? bestSeasonForPlayerCategory(item.playerId, picked.category)
+                : undefined;
+              const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
+              return (
+                <div
+                  key={item.id}
+                  className={`daily-tile ${picked ? "is-assigned" : ""} ${
+                    phase === "revealed" ? "is-revealed" : ""
+                  }`}
+                >
+                  <span className="daily-tile__number">{tileNumber}</span>
+                  <MediaCard media={item.media} compact />
+                  {phase === "revealed" ? (
+                    <>
                       <span className="daily-tile__reveal">
                         <strong>{playerName}</strong>
                         <span>
@@ -1669,41 +1682,41 @@ function DailyChallengeGame({
                             : "No season"}
                         </span>
                       </span>
-                    ) : (
-                      <span className="daily-tile__status">
-                        {picked ? ZONE_META[picked.category].label : "Unassigned"}
-                      </span>
-                    )}
-                    {phase === "revealed" && picked && ideal ? (
-                      <span className={picked.category === ideal ? "daily-pick is-correct" : "daily-pick"}>
-                        Picked {ZONE_META[picked.category].label} · Ideal {ZONE_META[ideal].label}
-                      </span>
-                    ) : null}
-                  </button>
-                );
-              })}
-            </div>
-
-	            <div className="daily-slot-grid" aria-label="Strokes gained slots">
-	              {CATEGORY_ORDER.map((category) => {
-	                const assignment = assignmentByCategory.get(category);
-	                const assignedTileNumber = assignment
-	                  ? challenge.items.findIndex((item) => item.id === assignment.item.id) + 1
-	                  : 0;
-	                return (
-                  <button
-                    type="button"
-                    key={category}
-                    className="daily-slot"
-                    disabled={phase === "revealed"}
-                    onClick={() => assignSelected(category)}
-	                  >
-	                    <span className="eyebrow">{ZONE_META[category].label}</span>
-	                    <strong>{assignment ? `Tile ${assignedTileNumber}` : "Tap to place selected tile"}</strong>
-	                  </button>
-                );
-              })}
-            </div>
+                      {picked && ideal ? (
+                        <span
+                          className={picked.category === ideal ? "daily-pick is-correct" : "daily-pick"}
+                        >
+                          Picked {ZONE_META[picked.category].label} · Ideal {ZONE_META[ideal].label}
+                        </span>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div
+                      className="daily-tile__cats"
+                      role="group"
+                      aria-label={`Assign a category to clue ${tileNumber}`}
+                    >
+                      {CATEGORY_ORDER.map((category) => {
+                        const meta = CATEGORY_META[category];
+                        const isActive = picked?.category === category;
+                        return (
+                          <button
+                            type="button"
+                            key={category}
+                            className={`daily-cat-chip ${isActive ? "is-active" : ""}`}
+                            aria-pressed={isActive}
+                            aria-label={`${meta.label}${isActive ? " (assigned)" : ""}`}
+                            onClick={() => assignCategory(item, category)}
+                          >
+                            {meta.shortLabel}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {phase === "assign" ? (

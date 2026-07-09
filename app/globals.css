@@ -1326,13 +1326,13 @@ button {
 }
 
 .daily-media--compact {
-  min-height: 210px;
+  min-height: auto;
   text-align: left;
 }
 
 .daily-media--compact img,
 .daily-media--compact video {
-  height: 180px;
+  height: clamp(120px, 18vh, 180px);
   min-height: 0;
 }
 
@@ -1357,6 +1357,23 @@ button {
   grid-template-columns: minmax(0, 1fr) 340px;
   gap: 16px;
   align-items: start;
+}
+
+.daily-assign-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.daily-assign-bar span {
+  font-family: var(--font-condensed);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.68);
 }
 
 .daily-tile-grid {
@@ -1404,8 +1421,46 @@ button {
   z-index: 1;
 }
 
+.daily-tile.is-assigned {
+  background: var(--surface-raised);
+}
+
 .daily-tile.is-revealed {
   background: rgba(244, 241, 234, 0.92);
+}
+
+/* The four SG categories shown as tap-to-assign chips under each clue image.
+   A chip lights up when its category is placed on this clue; a category can
+   only live on one clue at a time, so assigning it elsewhere clears it here. */
+.daily-tile__cats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+}
+
+.daily-cat-chip {
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 250, 240, 0.9);
+  color: var(--brand-ink);
+  padding: 9px 4px;
+  font-family: var(--font-condensed);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.daily-cat-chip:hover:not(.is-active) {
+  border-color: var(--brand-ink);
+}
+
+.daily-cat-chip.is-active {
+  border-color: var(--brand-ink);
+  background: var(--brand-ink);
+  color: var(--brand-cream);
 }
 
 .daily-tile__status,
@@ -2019,12 +2074,46 @@ button {
     font-size: clamp(1.8rem, 11vw, 3rem);
   }
 
-  .daily-tile-grid,
   .daily-slot-grid,
   .admin-fields,
   .admin-card-grid,
   .daily-save__form {
     grid-template-columns: 1fr;
+  }
+
+  /* Keep all four clues visible at once on mobile: a compact 2×2 image grid
+     with the category chips tucked under each image. Shrink the title so the
+     assignment lander fits on one screen without scrolling. */
+  .daily-challenge__head h1 {
+    font-size: clamp(1.8rem, 8vw, 2.6rem);
+  }
+
+  .daily-tile-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .daily-tile {
+    gap: 6px;
+  }
+
+  .daily-tile__cats {
+    gap: 4px;
+    padding: 8px;
+  }
+
+  .daily-cat-chip {
+    padding: 8px 2px;
+    font-size: 0.68rem;
+  }
+
+  .daily-assign-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .daily-assign-bar .ghost-button {
+    width: 100%;
   }
 
   .admin-shell {

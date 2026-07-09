@@ -13,9 +13,13 @@ import {
   REG_BUBBLE,
   REG_CONSISTENT_TOP10,
   REG_FEAST_FAMINE,
+  REG_HALL_OF_FAME,
+  REG_HISTORIC,
+  REG_HISTORIC_MARQUEE,
   REG_MID,
   REG_MISSED,
   REG_MULTI_WIN,
+  REG_MULTI_WIN_MARQUEE,
   REG_NO_WIN_RUNNER_UP,
   REG_NO_WIN_TOP3_OUTSIDE,
   REG_SINGLE_WIN,
@@ -30,6 +34,7 @@ import {
   SG_ONE_SINKS,
   SG_WORSE,
   fill,
+  formatList,
   pick,
   tournamentPhrase,
 } from "./copy";
@@ -930,6 +935,9 @@ type RegularSeasonSignals = {
   rank: number;
   madePlayoffs: boolean;
   winNames: string[];
+  // Names of the wins that were majors or the Players Championship, in full and
+  // in schedule order. These are the only wins named in a multi-win recap.
+  marqueeWins: string[];
   totalSg: number;
   top10Count: number;
   bestFinish: number;
@@ -937,6 +945,15 @@ type RegularSeasonSignals = {
   hasRunnerUp: boolean;
   missedCuts: number;
   topFinishEvent?: string;
+};
+
+// Spelled-out win totals for the "historically strong" (3–7 win) recap band.
+const WIN_COUNT_WORDS: Record<number, string> = {
+  3: "Three",
+  4: "Four",
+  5: "Five",
+  6: "Six",
+  7: "Seven",
 };
 
 // The recap reads as [optional win/no-win lead] + [rank-tier "rest"]. The lead
@@ -951,6 +968,7 @@ function regularSeasonWriteup(
     rank,
     madePlayoffs,
     winNames,
+    marqueeWins,
     totalSg,
     top10Count,
     bestFinish,
@@ -979,11 +997,28 @@ function regularSeasonWriteup(
   // otherwise the player's best finish for top-finish leads.
   const winEvent = winNames[0] ? tournamentPhrase(winNames[0]) : "";
   const bestEvent = topFinishEvent ? tournamentPhrase(topFinishEvent) : "";
+  // Multi-win seasons name only the marquee wins (majors / the Players); every
+  // other trophy is folded into a generic "multi-win season" description.
+  const marqueeList = formatList(marqueeWins);
+  const hasMarquee = marqueeWins.length > 0;
   let lead = "";
-  if (winCount >= 1 && missedCuts >= 3 && hasTop3) {
-    lead = fill(pick(REG_FEAST_FAMINE, leadSeed), { tournament: winEvent });
+  if (winCount >= 8) {
+    lead = pick(REG_HALL_OF_FAME, leadSeed);
+  } else if (winCount >= 3) {
+    lead = hasMarquee
+      ? fill(pick(REG_HISTORIC_MARQUEE, leadSeed), {
+          count: WIN_COUNT_WORDS[winCount] ?? String(winCount),
+          events: marqueeList,
+        })
+      : fill(pick(REG_HISTORIC, leadSeed), {
+          count: WIN_COUNT_WORDS[winCount] ?? String(winCount),
+        });
   } else if (winCount >= 2) {
-    lead = fill(pick(REG_MULTI_WIN, leadSeed), { tournament: winEvent });
+    lead = hasMarquee
+      ? fill(pick(REG_MULTI_WIN_MARQUEE, leadSeed), { events: marqueeList })
+      : pick(REG_MULTI_WIN, leadSeed);
+  } else if (winCount === 1 && missedCuts >= 3 && hasTop3) {
+    lead = fill(pick(REG_FEAST_FAMINE, leadSeed), { tournament: winEvent });
   } else if (winCount === 1) {
     lead = fill(
       rank > 30 || totalSg < 0.3
@@ -1161,6 +1196,15 @@ export function simulateSeason(
   const regularSeasonWins = results
     .filter((result) => result.position === 1)
     .map((result) => result.event.name);
+  // The subset of wins that carry marquee weight (majors and the Players
+  // Championship). Only these are named in a multi-win recap.
+  const marqueeWins = results
+    .filter(
+      (result) =>
+        result.position === 1 &&
+        (result.event.kind === "major" || result.event.kind === "players"),
+    )
+    .map((result) => result.event.name);
   let fedExPoints = regularSeasonPoints;
   const regularSeasonRank = regularSeasonRankFromPoints(regularSeasonPoints, seed);
   const madePlayoffs = regularSeasonRank <= 70;
@@ -1187,6 +1231,7 @@ export function simulateSeason(
         rank: regularSeasonRank,
         madePlayoffs,
         winNames: regularSeasonWins,
+        marqueeWins,
         totalSg,
         top10Count: madeCutResults.filter((result) => result.position <= 10).length,
         bestFinish,

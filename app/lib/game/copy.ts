@@ -19,6 +19,13 @@ export function fill(text: string, vars: Record<string, string>): string {
   return text.replace(/<(\w+)>/g, (match, key: string) => vars[key] ?? match);
 }
 
+// Joins names into a natural-language list: "a", "a and b", "a, b, and c".
+export function formatList(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? "";
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`;
+}
+
 // The regular-season templates supply their own article ("the <tournament>"),
 // so strip a leading "The " from event names ("The Players Championship") to
 // avoid "the The Players Championship". Major templates name majors in full and
@@ -76,10 +83,38 @@ export const REG_MISSED = [
 // Regular season — win / no-win leads (prepended to the rank tier)
 // ---------------------------------------------------------------------------
 
-// Fills <tournament> with the first win.
+// Multi-win season (2 wins) with no majors or Players Championship among the
+// trophies: describe it generically as a multi-win season, without naming the
+// individual regular-season events.
 export const REG_MULTI_WIN = [
-  "It started at the <tournament>, and you did not stop there. Winning twice before the postseason is a statement.",
-  "The <tournament> was just one of them. Two trophies means nobody gets to call it a fluke.",
+  "A multi-win season. Winning more than once before the postseason is a statement, and you made it twice.",
+  "Two trophies before the playoffs even start. Nobody gets to call this a fluke.",
+] as const;
+
+// Multi-win season (2 wins) that includes at least one major or the Players
+// Championship. Fills <events> with the marquee wins, named in full.
+export const REG_MULTI_WIN_MARQUEE = [
+  "You did not just win, you won where it counts: <events>. A multi-win season with hardware like that travels forever.",
+  "Two trophies, and the right ones — <events>. Nobody gets to call this a fluke.",
+] as const;
+
+// Historically strong season (3–7 wins) with no majors or Players win to name.
+// Fills <count> with the spelled-out win total.
+export const REG_HISTORIC = [
+  "<count> wins in a single season. There is no soft way to say it: this was a historically strong year.",
+  "A historically strong season with <count> trophies. Runs like this rewrite reputations.",
+] as const;
+
+// Historically strong season (3–7 wins) headlined by at least one major or the
+// Players. Fills <count> with the win total and <events> with the marquee wins.
+export const REG_HISTORIC_MARQUEE = [
+  "<count> wins in a single season, headlined by <events> — a historically strong year that does not come around often.",
+  "A historically strong season: <count> trophies, including <events>. People are going to remember this one.",
+] as const;
+
+// 8+ wins. A single fixed line — the most dominant seasons do not need variety.
+export const REG_HALL_OF_FAME = [
+  "Welcome to the Hall of Fame. When they talk about the most dominant seasons it's either you or Tiger in 2000. We're taking You vs The Field.",
 ] as const;
 
 // Fills <tournament> with the win.
