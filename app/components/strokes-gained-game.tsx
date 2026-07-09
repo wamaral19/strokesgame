@@ -301,9 +301,17 @@ function GameModeChooser({
   const canConfirm = yearMode !== "filter" || selectedYears.length > 0;
 
   useEffect(() => {
-    if (showClassicOptions) {
-      confirmRef.current?.focus();
+    if (!showClassicOptions) return;
+    // Only auto-focus on pointer devices. On touch, focusing the confirm button
+    // (which sits at the bottom of the panel) scrolls the fixed modal to reveal
+    // it — on first launch the mobile address bar makes the viewport short enough
+    // that the panel overflows, so the scroll jumps the modal out from under the
+    // user's tap. The first "Start Your Round" tap then misses and the popup
+    // appears to require a second pass. See feat/next-step-popups.
+    if (typeof window !== "undefined" && !window.matchMedia("(pointer: fine)").matches) {
+      return;
     }
+    confirmRef.current?.focus();
   }, [showClassicOptions]);
 
   const chooseDaily = () => {
