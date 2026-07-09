@@ -33,6 +33,9 @@ export type EventResult = {
   event: ScheduleEvent;
   strokes: number;
   position: number;
+  // True when at least one other player shared this finishing position (a "T5"
+  // finish); false for a solo finish ("5th"). Only meaningful when madeCut.
+  tied: boolean;
   madeCut: boolean;
   fedExPoints: number;
   earnings: number;
@@ -73,6 +76,9 @@ export type PlayoffStageResult = {
   categories: CategoryBreakdown[];
   weekSg: number;
   position: number;
+  // True when the playoff-event finish was shared (a "T5"); false for a solo
+  // finish ("5th").
+  tied: boolean;
   fedExPoints: number;
   earnings: number;
   rankBefore: number;

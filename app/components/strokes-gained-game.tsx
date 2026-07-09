@@ -6,6 +6,15 @@ import rawSeasons from "../lib/data/player-seasons.json";
 import { formatCurrency, formatSg, positionLabel } from "../lib/format";
 import { CATEGORY_META, CATEGORY_ORDER } from "../lib/game/categories";
 import {
+  dailyRating,
+  easternDateKey,
+  getDailyChallenge,
+  type DailyChallenge,
+  type DailyChallengeItem,
+  type DailyChallengeMedia,
+  type DailyChallengeRating,
+} from "../lib/game/daily-challenge";
+import {
   buildSeed,
   categorySgFromAssignments,
   optimalCategoryBySeason,
@@ -58,6 +67,7 @@ type SpinPhase = "player" | "year" | "ready";
 type YearMode = "current" | "all" | "filter";
 type StatsMode = "blind" | "show";
 type FieldMode = "entire" | "notables";
+type GameVariant = "classic" | "daily";
 
 const STATS_MODE_LABEL: Record<StatsMode, string> = {
   blind: "Blind",
@@ -105,13 +115,86 @@ function scrollIntoViewSmooth(
   });
 }
 
-function Header() {
+function Header({
+  onResetRequest,
+  onHowToPlay,
+}: {
+  onResetRequest: () => void;
+  onHowToPlay: () => void;
+}) {
   return (
     <header className="site-header">
       <div className="site-header__inner">
-        <div className="wordmark">Strokes Game</div>
+        <button type="button" className="wordmark wordmark-button" onClick={onResetRequest}>
+          Strokes Game
+        </button>
+        <button type="button" className="header-link-button" onClick={onHowToPlay}>
+          How to Play
+        </button>
       </div>
     </header>
+  );
+}
+
+function HowToPlayDialog({ onClose }: { onClose: () => void }) {
+  return (
+    <div
+      className="reset-confirm how-to-play"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="how-to-play-title"
+    >
+      <div className="reset-confirm__backdrop" />
+      <div className="reset-confirm__panel how-to-play__panel">
+        <span className="eyebrow">How to Play</span>
+        <h2 id="how-to-play-title">Build the perfect golfer from the best pieces of real players.</h2>
+        <div className="how-to-play__copy">
+          <p>
+            Different players excel at different parts of the game. Even in one of Tiger&apos;s
+            legendary seasons, another player could still be better with the putter. Your job is to
+            take the right piece of each player&apos;s game and construct a golfer who can put
+            together a legendary season.
+          </p>
+          <p>
+            Strokes Gained measures how many shots a player gains or loses against the field in a
+            specific area: off the tee, approach, around the green, or putting. Higher is better.
+          </p>
+        </div>
+        <button type="button" className="primary-button" onClick={onClose}>
+          Got It
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ResetConfirmDialog({
+  onCancel,
+  onConfirm,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <div
+      className="reset-confirm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="reset-confirm-title"
+    >
+      <div className="reset-confirm__backdrop" />
+      <div className="reset-confirm__panel">
+        <h2 id="reset-confirm-title">Return to game mode selection?</h2>
+        <div className="reset-confirm__actions">
+          <button type="button" className="ghost-button" onClick={onCancel}>
+            Cancel
+          </button>
+          <button type="button" className="primary-button" onClick={onConfirm}>
+            Return to Game Mode Selection
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -151,6 +234,7 @@ function GameModeChooser({
   fieldMode,
   selectedYears,
   isChange,
+  onGameVariant,
   onStatsMode,
   onYearMode,
   onFieldMode,
@@ -162,6 +246,7 @@ function GameModeChooser({
   fieldMode: FieldMode;
   selectedYears: number[];
   isChange: boolean;
+  onGameVariant: (mode: GameVariant) => void;
   onStatsMode: (mode: StatsMode) => void;
   onYearMode: (mode: YearMode) => void;
   onFieldMode: (mode: FieldMode) => void;
@@ -169,11 +254,24 @@ function GameModeChooser({
   onConfirm: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement | null>(null);
+  const [showClassicOptions, setShowClassicOptions] = useState(false);
   const canConfirm = yearMode !== "filter" || selectedYears.length > 0;
 
   useEffect(() => {
-    confirmRef.current?.focus();
-  }, []);
+    if (showClassicOptions) {
+      confirmRef.current?.focus();
+    }
+  }, [showClassicOptions]);
+
+  const chooseDaily = () => {
+    onGameVariant("daily");
+    onConfirm();
+  };
+
+  const chooseClassic = () => {
+    onGameVariant("classic");
+    setShowClassicOptions(true);
+  };
 
   return (
     <div
@@ -185,87 +283,109 @@ function GameModeChooser({
       <div className="mode-chooser__backdrop" />
       <div className="mode-chooser__panel">
         <span className="eyebrow">Choose Your Game Mode</span>
-        <h2 id="mode-chooser-title">
-          Build the perfect player to win the FedEx Cup by taking the best pieces of their game.
-        </h2>
+        <h2 id="mode-chooser-title">Pick how you want to play.</h2>
 
-        <fieldset className="mode-group">
-          <legend>Stats</legend>
-          <p className="mode-group__hint">
-            Show the stats or only see a name when placing a player into a strokes gained category.
-          </p>
-          <div className="mode-options">
-            <ModeOption
-              active={statsMode === "blind"}
-              title="Blind"
-              onSelect={() => onStatsMode("blind")}
-            />
-            <ModeOption
-              active={statsMode === "show"}
-              title="Show Stats"
-              onSelect={() => onStatsMode("show")}
-            />
-          </div>
-        </fieldset>
-
-        <fieldset className="mode-group">
-          <legend>Time Frame</legend>
-          <p className="mode-group__hint">Choose your time frame.</p>
-          <div className="mode-options mode-options--trio">
-            <ModeOption
-              active={yearMode === "all"}
-              title="All Time"
-              onSelect={() => onYearMode("all")}
-            />
-            <ModeOption
-              active={yearMode === "current"}
-              title="Current"
-              onSelect={() => onYearMode("current")}
-            />
-            <ModeOption
-              active={yearMode === "filter"}
-              title="Custom"
-              onSelect={() => onYearMode("filter")}
-            />
-          </div>
-          {yearMode === "filter" ? (
-            <div className="mode-years">
-              {AVAILABLE_YEARS.map((year) => (
-                <label key={year}>
-                  <input
-                    type="checkbox"
-                    checked={selectedYears.includes(year)}
-                    onChange={() => onToggleYear(year)}
-                  />
-                  <span>{year}</span>
-                </label>
-              ))}
+        {!showClassicOptions ? (
+          <fieldset className="mode-group">
+            <legend>Game Mode</legend>
+            <div className="mode-options">
+              <ModeOption
+                active={false}
+                title="Daily Challenge"
+                hint="Use clues to build a player and compete."
+                onSelect={chooseDaily}
+              />
+              <ModeOption
+                active={false}
+                title="Classic"
+                hint="Try to construct a FedEx Cup winner"
+                onSelect={chooseClassic}
+              />
             </div>
-          ) : null}
-        </fieldset>
+          </fieldset>
+        ) : null}
 
-        <fieldset className="mode-group">
-          <legend>Field</legend>
-          <p className="mode-group__hint">Names the casual fan would recognize.</p>
-          <div className="mode-options">
-            <ModeOption
-              active={fieldMode === "entire"}
-              title="Entire Field"
-              onSelect={() => onFieldMode("entire")}
-            />
-            <ModeOption active={false} disabled title="Notables" soon />
-          </div>
-        </fieldset>
+        {showClassicOptions ? (
+          <>
+            <fieldset className="mode-group">
+              <legend>Stats</legend>
+              <p className="mode-group__hint">
+                Show the stats or only see a name when placing a player into a strokes gained category.
+              </p>
+              <div className="mode-options">
+                <ModeOption
+                  active={statsMode === "blind"}
+                  title="Blind"
+                  onSelect={() => onStatsMode("blind")}
+                />
+                <ModeOption
+                  active={statsMode === "show"}
+                  title="Show Stats"
+                  onSelect={() => onStatsMode("show")}
+                />
+              </div>
+            </fieldset>
 
-        <button
-          type="button"
-          className="primary-button mode-chooser__confirm"
-          onClick={onConfirm}
-          disabled={!canConfirm}
-          ref={confirmRef}
-        >
-          {isChange ? "Update Game Mode" : "Start Your Round"}
-        </button>
+            <fieldset className="mode-group">
+              <legend>Time Frame</legend>
+              <p className="mode-group__hint">Choose your time frame.</p>
+              <div className="mode-options mode-options--trio">
+                <ModeOption
+                  active={yearMode === "all"}
+                  title="All Time"
+                  onSelect={() => onYearMode("all")}
+                />
+                <ModeOption
+                  active={yearMode === "current"}
+                  title="Current"
+                  onSelect={() => onYearMode("current")}
+                />
+                <ModeOption
+                  active={yearMode === "filter"}
+                  title="Custom"
+                  onSelect={() => onYearMode("filter")}
+                />
+              </div>
+              {yearMode === "filter" ? (
+                <div className="mode-years">
+                  {AVAILABLE_YEARS.map((year) => (
+                    <label key={year}>
+                      <input
+                        type="checkbox"
+                        checked={selectedYears.includes(year)}
+                        onChange={() => onToggleYear(year)}
+                      />
+                      <span>{year}</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+            </fieldset>
+
+            <fieldset className="mode-group">
+              <legend>Field</legend>
+              <p className="mode-group__hint">Names the casual fan would recognize.</p>
+              <div className="mode-options">
+                <ModeOption
+                  active={fieldMode === "entire"}
+                  title="Entire Field"
+                  onSelect={() => onFieldMode("entire")}
+                />
+                <ModeOption active={false} disabled title="Notables" soon />
+              </div>
+            </fieldset>
+
+            <button
+              type="button"
+              className="primary-button mode-chooser__confirm"
+              onClick={onConfirm}
+              disabled={!canConfirm}
+              ref={confirmRef}
+            >
+              {isChange ? "Update Game Mode" : "Start Your Round"}
+            </button>
+          </>
+        ) : null}
       </div>
     </div>
   );
@@ -620,7 +740,7 @@ function PlayoffStageBlock({
           <div className="playoff-summary__grid">
             <div>
               <span className="eyebrow">Finish</span>
-              <strong>{positionLabel(stage.position)}</strong>
+              <strong>{positionLabel(stage.position, stage.tied)}</strong>
             </div>
             <div>
               <span className="eyebrow">FedEx Points</span>
@@ -744,12 +864,14 @@ function FinalBlock({
         name: result.event.name,
         kind: result.event.kind,
         position: result.position,
+        tied: result.tied,
       })),
     ...simulation.playoffStages.map((stage) => ({
       id: stage.event.id,
       name: stage.event.name,
       kind: stage.event.kind,
       position: stage.position,
+      tied: stage.tied,
     })),
   ];
   const byPrestige = (a: { kind: EventKind; position: number }, b: typeof a) =>
@@ -793,7 +915,7 @@ function FinalBlock({
       lines.push(
         "",
         "Notable Finishes:",
-        ...notableFinishes.map((finish) => `• ${positionLabel(finish.position)} — ${finish.name}`),
+        ...notableFinishes.map((finish) => `• ${positionLabel(finish.position, finish.tied)} — ${finish.name}`),
       );
     }
     if (typeof window !== "undefined") {
@@ -894,7 +1016,7 @@ function FinalBlock({
           <ul>
             {notableFinishes.map((finish) => (
               <li key={finish.id} className={finish.position === 1 ? "is-win" : ""}>
-                <span className="notable-finishes__pos">{positionLabel(finish.position)}</span>
+                <span className="notable-finishes__pos">{positionLabel(finish.position, finish.tied)}</span>
                 <span className="notable-finishes__event">{finish.name}</span>
                 <span className="pill">{finish.kind}</span>
               </li>
@@ -942,6 +1064,7 @@ function TournamentLog({
       event: stage.event,
       strokes: stage.weekSg,
       position: stage.position,
+      tied: stage.tied,
       madeCut: true,
       fedExPoints: stage.fedExPoints,
       earnings: stage.earnings,
@@ -984,7 +1107,7 @@ function TournamentLog({
                       : ""
                 }
               >
-                <td>{result.madeCut ? positionLabel(result.position) : "MC"}</td>
+                <td>{result.madeCut ? positionLabel(result.position, result.tied) : "MC"}</td>
                 <td>{result.event.name}</td>
                 <td>
                   <span className="pill">{result.event.kind}</span>
@@ -1195,11 +1318,448 @@ function SeasonPlayback({
   );
 }
 
+function MediaCard({ media, compact = false }: { media: DailyChallengeMedia; compact?: boolean }) {
+  if (media.kind === "image") {
+    return (
+      <figure className={`daily-media ${compact ? "daily-media--compact" : ""}`}>
+        <img src={media.src} alt={media.alt} />
+      </figure>
+    );
+  }
+
+  if (media.kind === "video") {
+    return (
+      <figure className={`daily-media ${compact ? "daily-media--compact" : ""}`}>
+        <video src={media.src} aria-label={media.alt ?? media.title} controls={!compact} playsInline />
+      </figure>
+    );
+  }
+
+  return (
+    <div className={`daily-media daily-media--text ${compact ? "daily-media--compact" : ""}`}>
+      <p>{media.body}</p>
+    </div>
+  );
+}
+
+type DailyTileAssignment = {
+  category: CategoryKey;
+  item: DailyChallengeItem;
+};
+
+type StoredDailyUser = {
+  email: string;
+  pin: string;
+};
+
+const DAILY_USER_KEY = "strokes-game-daily-user";
+const DAILY_RESULTS_KEY = "strokes-game-daily-results";
+
+function DailySavePanel({
+  challenge,
+  score,
+  rating,
+  assignments,
+}: {
+  challenge: DailyChallenge;
+  score: number;
+  rating: DailyChallengeRating;
+  assignments: SlotAssignment[];
+}) {
+  const [email, setEmail] = useState("");
+  const [pin, setPin] = useState("");
+  const [savedEmail, setSavedEmail] = useState("");
+  const [message, setMessage] = useState("");
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(DAILY_USER_KEY);
+      if (!stored) return;
+      const user = JSON.parse(stored) as StoredDailyUser;
+      setEmail(user.email);
+      setPin(user.pin);
+      setSavedEmail(user.email);
+    } catch {
+      // Ignore malformed local storage.
+    }
+  }, []);
+
+  const handleSave = () => {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail.includes("@") || !/^\d{4}$/.test(pin)) {
+      setMessage("Use an email and a 4 digit PIN.");
+      return;
+    }
+
+    const user: StoredDailyUser = { email: trimmedEmail, pin };
+    const result = {
+      challengeId: challenge.id,
+      date: challenge.date,
+      email: trimmedEmail,
+      score,
+      rating,
+      savedAt: new Date().toISOString(),
+      lineup: assignments.map((assignment) => ({
+        category: assignment.category,
+        seasonId: assignment.season.id,
+        player: assignment.season.player,
+        year: assignment.season.year,
+      })),
+    };
+
+    try {
+      const existing = JSON.parse(window.localStorage.getItem(DAILY_RESULTS_KEY) ?? "[]");
+      const nextResults = Array.isArray(existing)
+        ? [
+            ...existing.filter(
+              (item) =>
+                item?.challengeId !== challenge.id || item?.email !== trimmedEmail,
+            ),
+            result,
+          ]
+        : [result];
+      window.localStorage.setItem(DAILY_USER_KEY, JSON.stringify(user));
+      window.localStorage.setItem(DAILY_RESULTS_KEY, JSON.stringify(nextResults));
+      setSavedEmail(trimmedEmail);
+      setMessage("Saved on this device.");
+    } catch {
+      setMessage("Could not save on this device.");
+    }
+  };
+
+  return (
+    <section className="daily-save" aria-label="Save daily challenge result">
+      <div>
+        <span className="eyebrow">Save Result</span>
+        <h3>{savedEmail ? `Signed in as ${savedEmail}` : "Create a daily profile"}</h3>
+        <p>Store this result with an email and 4 digit PIN.</p>
+      </div>
+      <div className="daily-save__form">
+        <label>
+          <span>Email</span>
+          <input
+            type="email"
+            value={email}
+            autoComplete="email"
+            onChange={(event) => setEmail(event.target.value)}
+          />
+        </label>
+        <label>
+          <span>PIN</span>
+          <input
+            type="password"
+            inputMode="numeric"
+            maxLength={4}
+            pattern="[0-9]*"
+            value={pin}
+            autoComplete="current-password"
+            onChange={(event) => setPin(event.target.value.replace(/\D/g, "").slice(0, 4))}
+          />
+        </label>
+        <button type="button" className="primary-button" onClick={handleSave}>
+          Save
+        </button>
+      </div>
+      {message ? <p className="daily-save__message">{message}</p> : null}
+    </section>
+  );
+}
+
+function bestSeasonForPlayerCategory(playerId: string, category: CategoryKey) {
+  return SEASONS.filter((season) => season.playerId === playerId).reduce<PlayerSeason | undefined>(
+    (best, season) => {
+      if (!best || season.sg[category] > best.sg[category]) return season;
+      return best;
+    },
+    undefined,
+  );
+}
+
+function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
+  const ideal = new Map<string, CategoryKey>();
+  if (items.length !== CATEGORY_ORDER.length) return ideal;
+
+  function permutations<T>(values: T[]): T[][] {
+    if (values.length <= 1) return [values];
+    return values.flatMap((value, index) =>
+      permutations([...values.slice(0, index), ...values.slice(index + 1)]).map((rest) => [
+        value,
+        ...rest,
+      ]),
+    );
+  }
+
+  let bestTotal = -Infinity;
+  let bestOrder = CATEGORY_ORDER;
+  for (const order of permutations(CATEGORY_ORDER)) {
+    const total = items.reduce((sum, item, index) => {
+      return sum + (bestSeasonForPlayerCategory(item.playerId, order[index])?.sg[order[index]] ?? -100);
+    }, 0);
+    if (total > bestTotal) {
+      bestTotal = total;
+      bestOrder = order;
+    }
+  }
+
+  items.forEach((item, index) => ideal.set(item.id, bestOrder[index]));
+  return ideal;
+}
+
+function DailyChallengeGame({
+  challenge,
+  onComplete,
+  onRestart,
+}: {
+  challenge: DailyChallenge;
+  onComplete: (assignments: SlotAssignment[]) => void;
+  onRestart: () => void;
+}) {
+  const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("browse");
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedItemId, setSelectedItemId] = useState(challenge.items[0]?.id ?? "");
+  const [assignments, setAssignments] = useState<DailyTileAssignment[]>([]);
+
+  const playerNameByItemId = useMemo(() => {
+    return new Map(
+      challenge.items.map((item) => [
+        item.id,
+        SEASONS.find((season) => season.playerId === item.playerId)?.player ?? "Unknown Player",
+      ]),
+    );
+  }, [challenge]);
+
+  const idealByItemId = useMemo(() => optimalCategoryByDailyItem(challenge.items), [challenge]);
+
+  const assignmentByCategory = useMemo(
+    () => new Map(assignments.map((assignment) => [assignment.category, assignment])),
+    [assignments],
+  );
+
+  const currentItem = challenge.items[currentIndex] ?? challenge.items[0];
+  const selectedItem =
+    challenge.items.find((item) => item.id === selectedItemId) ?? challenge.items[0];
+  const complete = assignments.length === CATEGORY_ORDER.length;
+
+  const revealedAssignments = useMemo<SlotAssignment[]>(() => {
+    if (!complete) return [];
+    return assignments
+      .map((assignment) => {
+        const season = bestSeasonForPlayerCategory(
+          assignment.item.playerId,
+          assignment.category,
+        );
+        return season ? { category: assignment.category, season } : undefined;
+      })
+      .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
+  }, [assignments, complete]);
+
+  const score = useMemo(() => {
+    return assignments.reduce((count, assignment) => {
+      return count + (idealByItemId.get(assignment.item.id) === assignment.category ? 1 : 0);
+    }, 0);
+  }, [assignments, idealByItemId]);
+
+  const rating = dailyRating(score);
+
+  const move = (direction: -1 | 1) => {
+    setCurrentIndex((index) => {
+      const next = (index + direction + challenge.items.length) % challenge.items.length;
+      setSelectedItemId(challenge.items[next].id);
+      return next;
+    });
+  };
+
+  const assignSelected = (category: CategoryKey) => {
+    if (!selectedItem || phase === "revealed") return;
+    setAssignments((current) => [
+      ...current.filter(
+        (assignment) => assignment.category !== category && assignment.item.id !== selectedItem.id,
+      ),
+      { category, item: selectedItem },
+    ]);
+  };
+
+  const reveal = useCallback(() => {
+    if (!complete || revealedAssignments.length !== CATEGORY_ORDER.length) return;
+    setPhase("revealed");
+    onComplete(revealedAssignments);
+  }, [complete, onComplete, revealedAssignments]);
+
+  useEffect(() => {
+    if (phase !== "assign" || !complete || revealedAssignments.length !== CATEGORY_ORDER.length) {
+      return;
+    }
+    const timer = window.setTimeout(reveal, 450);
+    return () => window.clearTimeout(timer);
+  }, [complete, phase, reveal, revealedAssignments.length]);
+
+  return (
+    <section className="daily-challenge" aria-label={challenge.title}>
+      <div className="daily-challenge__head">
+        <div>
+          <span className="eyebrow">{challenge.date}</span>
+          <h1>{challenge.title}</h1>
+        </div>
+        <button type="button" className="ghost-button" onClick={onRestart}>
+          Change Mode
+        </button>
+      </div>
+
+      {phase === "browse" ? (
+        <div className="daily-browser">
+          <button
+            type="button"
+            className="daily-browser__arrow"
+            onClick={() => move(-1)}
+            aria-label="Previous clue"
+          >
+            ←
+          </button>
+          <MediaCard media={currentItem.media} />
+          <button
+            type="button"
+            className="daily-browser__arrow"
+            onClick={() => move(1)}
+            aria-label="Next clue"
+          >
+            →
+          </button>
+          <div className="daily-browser__footer">
+            <span>
+              {currentIndex + 1}/{challenge.items.length}
+            </span>
+            <button type="button" className="primary-button" onClick={() => setPhase("assign")}>
+              Assign Slots
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {phase !== "browse" ? (
+        <>
+          <div className="daily-assignment">
+            <div className="daily-tile-grid" aria-label="Daily clue tiles">
+              {challenge.items.map((item, index) => {
+                const tileNumber = index + 1;
+                const ideal = idealByItemId.get(item.id);
+                const picked = assignments.find((assignment) => assignment.item.id === item.id);
+                const pickedSeason = picked
+                  ? bestSeasonForPlayerCategory(item.playerId, picked.category)
+                  : undefined;
+                const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
+                return (
+                  <button
+                    type="button"
+                    key={item.id}
+                    className={`daily-tile ${selectedItemId === item.id ? "is-selected" : ""} ${
+                      phase === "revealed" ? "is-revealed" : ""
+	                    }`}
+	                    onClick={() => setSelectedItemId(item.id)}
+	                  >
+	                    <span className="daily-tile__number">{tileNumber}</span>
+	                    <MediaCard media={item.media} compact />
+                    {phase === "revealed" ? (
+                      <span className="daily-tile__reveal">
+                        <strong>{playerName}</strong>
+                        <span>
+                          {pickedSeason && picked
+                            ? `${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
+                                pickedSeason.sg[picked.category],
+                              )}`
+                            : "No season"}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="daily-tile__status">
+                        {picked ? ZONE_META[picked.category].label : "Unassigned"}
+                      </span>
+                    )}
+                    {phase === "revealed" && picked && ideal ? (
+                      <span className={picked.category === ideal ? "daily-pick is-correct" : "daily-pick"}>
+                        Picked {ZONE_META[picked.category].label} · Ideal {ZONE_META[ideal].label}
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+
+	            <div className="daily-slot-grid" aria-label="Strokes gained slots">
+	              {CATEGORY_ORDER.map((category) => {
+	                const assignment = assignmentByCategory.get(category);
+	                const assignedTileNumber = assignment
+	                  ? challenge.items.findIndex((item) => item.id === assignment.item.id) + 1
+	                  : 0;
+	                return (
+                  <button
+                    type="button"
+                    key={category}
+                    className="daily-slot"
+                    disabled={phase === "revealed"}
+                    onClick={() => assignSelected(category)}
+	                  >
+	                    <span className="eyebrow">{ZONE_META[category].label}</span>
+	                    <strong>{assignment ? `Tile ${assignedTileNumber}` : "Tap to place selected tile"}</strong>
+	                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {phase === "assign" ? (
+            <div className="daily-actions">
+              <span>{assignments.length}/4 slots assigned</span>
+              <button type="button" className="primary-button" onClick={reveal} disabled={!complete}>
+                {complete ? "Revealing Players" : "Reveal Players"}
+              </button>
+            </div>
+          ) : null}
+
+          {phase === "revealed" ? (
+            <div className="daily-result">
+              <div className="daily-result__head">
+                <span className="eyebrow">{rating}</span>
+                <p>{score}/4 ideal slots</p>
+              </div>
+              <div className="playoff-stat-rail daily-profile-rail" aria-label="Daily player profile">
+                {CATEGORY_ORDER.map((category) => {
+                  const assignment = revealedAssignments.find((item) => item.category === category);
+                  const meta = CATEGORY_META[category];
+                  const value = assignment?.season.sg[category];
+                  return (
+                    <div className="playoff-stat playoff-stat--up daily-profile-stat" key={category}>
+                      <span className="eyebrow">{meta.shortLabel}</span>
+                      <strong className="playoff-stat__value">
+                        {value !== undefined ? formatSg(value) : "--"}
+                      </strong>
+                      <span className="playoff-stat__meta">
+                        {assignment
+                          ? `${assignment.season.player} · ${assignment.season.year}`
+                          : "unassigned"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ) : null}
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 export function StrokesGainedGame() {
   const [gameModeChosen, setGameModeChosen] = useState(false);
+  const [gameVariant, setGameVariant] = useState<GameVariant>("classic");
+  const [dailyDateKey, setDailyDateKey] = useState(() => easternDateKey());
   const [statsMode, setStatsMode] = useState<StatsMode>("blind");
   const [fieldMode, setFieldMode] = useState<FieldMode>("entire");
   const [assignments, setAssignments] = useState<SlotAssignment[]>([]);
+  const [dailyAssignments, setDailyAssignments] = useState<SlotAssignment[]>([]);
+  const [dailyRunId, setDailyRunId] = useState(0);
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
   const [currentSeason, setCurrentSeason] = useState<PlayerSeason | undefined>();
   const [displayPlayer, setDisplayPlayer] = useState("...");
   const [displayYear, setDisplayYear] = useState("...");
@@ -1208,6 +1768,7 @@ export function StrokesGainedGame() {
   const [yearMode, setYearMode] = useState<YearMode>("current");
   const [selectedYears, setSelectedYears] = useState<number[]>([LATEST_YEAR]);
   const timers = useRef<number[]>([]);
+  const dailyChallenge = useMemo(() => getDailyChallenge(dailyDateKey), [dailyDateKey]);
 
   const eligibleSeasons = useMemo(() => {
     if (yearMode === "all") return SEASONS;
@@ -1234,6 +1795,14 @@ export function StrokesGainedGame() {
     if (!complete) return undefined;
     return simulateSeason(categorySgFromAssignments(assignments), buildSeed(assignments));
   }, [assignments, complete]);
+  const dailyComplete = dailyAssignments.length === CATEGORY_ORDER.length;
+  const dailySimulation = useMemo(() => {
+    if (!dailyComplete) return undefined;
+    return simulateSeason(
+      categorySgFromAssignments(dailyAssignments),
+      buildSeed(dailyAssignments),
+    );
+  }, [dailyAssignments, dailyComplete]);
 
   const assignmentByCategory = useMemo(() => {
     return new Map(assignments.map((assignment) => [assignment.category, assignment]));
@@ -1305,12 +1874,25 @@ export function StrokesGainedGame() {
   useEffect(() => {
     // Hold off on the reels until a game mode is picked — no spinning behind the
     // chooser on first open.
-    if (!gameModeChosen) return;
+    if (!gameModeChosen || gameVariant !== "classic") return;
     setAssignments([]);
     setMulligans(0);
     startSpin(new Set());
     return clearSpinTimers;
-  }, [clearSpinTimers, gameModeChosen, selectedYears, startSpin, yearMode]);
+  }, [clearSpinTimers, gameModeChosen, gameVariant, selectedYears, startSpin, yearMode]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      const nextDateKey = easternDateKey();
+      setDailyDateKey((current) => (current === nextDateKey ? current : nextDateKey));
+    }, 60_000);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    setDailyAssignments([]);
+    setDailyRunId((value) => value + 1);
+  }, [dailyChallenge.id]);
 
   const handleYearModeChange = (nextMode: YearMode) => {
     setYearMode(nextMode);
@@ -1358,6 +1940,30 @@ export function StrokesGainedGame() {
     startSpin(new Set());
   };
 
+  const resetDaily = () => {
+    setDailyAssignments([]);
+    setDailyRunId((value) => value + 1);
+  };
+
+  const returnToGameModeSelection = () => {
+    clearSpinTimers();
+    setResetConfirmOpen(false);
+    setGameModeChosen(false);
+    setGameVariant("classic");
+    setStatsMode("blind");
+    setFieldMode("entire");
+    setAssignments([]);
+    setDailyAssignments([]);
+    setDailyRunId((value) => value + 1);
+    setCurrentSeason(undefined);
+    setDisplayPlayer("...");
+    setDisplayYear("...");
+    setPhase("player");
+    setMulligans(0);
+    setYearMode("current");
+    setSelectedYears([LATEST_YEAR]);
+  };
+
   return (
     <main className="page-shell">
       {!gameModeChosen ? (
@@ -1367,6 +1973,12 @@ export function StrokesGainedGame() {
           fieldMode={fieldMode}
           selectedYears={selectedYears}
           isChange={assignments.length > 0 || mulligans > 0}
+          onGameVariant={(mode) => {
+            setGameVariant(mode);
+            if (mode === "daily") {
+              clearSpinTimers();
+            }
+          }}
           onStatsMode={setStatsMode}
           onYearMode={handleYearModeChange}
           onFieldMode={setFieldMode}
@@ -1375,8 +1987,45 @@ export function StrokesGainedGame() {
         />
       ) : null}
 
-      <Header />
+      <Header
+        onResetRequest={() => setResetConfirmOpen(true)}
+        onHowToPlay={() => setHowToPlayOpen(true)}
+      />
 
+      {resetConfirmOpen ? (
+        <ResetConfirmDialog
+          onCancel={() => setResetConfirmOpen(false)}
+          onConfirm={returnToGameModeSelection}
+        />
+      ) : null}
+
+      {howToPlayOpen ? <HowToPlayDialog onClose={() => setHowToPlayOpen(false)} /> : null}
+
+      {gameVariant === "daily" ? (
+        <>
+          <DailyChallengeGame
+            key={`${dailyChallenge.id}-${dailyRunId}`}
+            challenge={dailyChallenge}
+            onComplete={setDailyAssignments}
+            onRestart={() => {
+              resetDaily();
+              setGameModeChosen(false);
+            }}
+          />
+          {dailySimulation ? (
+            <SeasonPlayback
+              simulation={dailySimulation}
+              assignments={dailyAssignments}
+              mulligans={0}
+              modeChips={["Daily Challenge", dailyChallenge.date]}
+              onNewRound={resetDaily}
+            />
+          ) : null}
+          {dailySimulation ? <AssignmentStats assignments={dailyAssignments} /> : null}
+          <SiteFooter />
+        </>
+      ) : (
+        <>
       <section className="play-layout">
         <div className="play-layout__left">
           <button
@@ -1442,6 +2091,8 @@ export function StrokesGainedGame() {
       ) : null}
 
       <SiteFooter />
+        </>
+      )}
     </main>
   );
 }

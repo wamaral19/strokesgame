@@ -31,9 +31,28 @@ export function formatCurrency(value: number) {
   }).format(value);
 }
 
-export function positionLabel(position: number) {
+// Ordinal suffix for a solo finish: 2 -> "2nd", 3 -> "3rd", 4 -> "4th", 11 ->
+// "11th", 21 -> "21st".
+function ordinal(position: number) {
+  const mod100 = position % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${position}th`;
+  switch (position % 10) {
+    case 1:
+      return `${position}st`;
+    case 2:
+      return `${position}nd`;
+    case 3:
+      return `${position}rd`;
+    default:
+      return `${position}th`;
+  }
+}
+
+// A finish label. First is always a "Win". Everything else is "T5" when the
+// finish was shared and a solo ordinal ("5th") when it wasn't.
+export function positionLabel(position: number, tied = true) {
   if (position === 1) return "Win";
-  return `T${position}`;
+  return tied ? `T${position}` : ordinal(position);
 }
 
 // A notable major finish rewrites the top of the recap. We only surface the
