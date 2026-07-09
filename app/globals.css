@@ -1467,7 +1467,7 @@ button {
   cursor: pointer;
 }
 
-.daily-cat-chip:hover:not(.is-active) {
+.daily-cat-chip:hover:not(.is-active):not(.is-taken) {
   border-color: var(--brand-ink);
 }
 
@@ -1475,6 +1475,29 @@ button {
   border-color: var(--brand-ink);
   background: var(--brand-ink);
   color: var(--brand-cream);
+}
+
+/* A category already placed on another clue is locked here — greyed out with a
+   diagonal slash so it's clear it can't be picked twice. */
+.daily-cat-chip.is-taken {
+  position: relative;
+  color: rgba(26, 26, 26, 0.35);
+  background: rgba(230, 228, 220, 0.6);
+  cursor: not-allowed;
+}
+
+.daily-cat-chip.is-taken::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom right,
+    transparent calc(50% - 0.75px),
+    rgba(26, 26, 26, 0.4) calc(50% - 0.75px),
+    rgba(26, 26, 26, 0.4) calc(50% + 0.75px),
+    transparent calc(50% + 0.75px)
+  );
 }
 
 .daily-tile__status,
@@ -1589,15 +1612,22 @@ button {
   color: rgba(26, 26, 26, 0.68);
 }
 
-.daily-profile-stat--total {
+/* Compound selector so the solid dark green beats the lighter, translucent
+   .playoff-stat--up background it also carries. */
+.daily-profile-stat.daily-profile-stat--total {
   border-color: var(--color-green-900);
-  background: var(--color-green-800);
+  background: var(--color-green-900);
 }
 
-.daily-profile-stat--total .eyebrow,
-.daily-profile-stat--total .playoff-stat__value,
-.daily-profile-stat--total .playoff-stat__meta {
+.daily-profile-stat.daily-profile-stat--total .eyebrow,
+.daily-profile-stat.daily-profile-stat--total .playoff-stat__value,
+.daily-profile-stat.daily-profile-stat--total .playoff-stat__meta {
   color: #fff;
+}
+
+/* A negative overall total reads red even against the dark green tile. */
+.daily-profile-stat.daily-profile-stat--total .playoff-stat__value--negative {
+  color: #ff6b60;
 }
 
 @media (max-width: 720px) {

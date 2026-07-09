@@ -286,8 +286,7 @@ function GameModeChooser({
         <h2 id="mode-chooser-title">Pick how you want to play.</h2>
 
         {!showClassicOptions ? (
-          <fieldset className="mode-group">
-            <legend>Game Mode</legend>
+          <fieldset className="mode-group" aria-label="Game Mode">
             <div className="mode-options">
               <ModeOption
                 active={false}
@@ -1203,12 +1202,14 @@ function SeasonPlayback({
   mulligans,
   modeChips,
   onNewRound,
+  suppressInitialScroll = false,
 }: {
   simulation: SeasonSimulation;
   assignments: SlotAssignment[];
   mulligans: number;
   modeChips: string[];
   onNewRound: () => void;
+  suppressInitialScroll?: boolean;
 }) {
   const stages = simulation.playoffStages;
   // East Lake's tournament recap is skipped, but its strokes-gained sim still
@@ -1240,8 +1241,11 @@ function SeasonPlayback({
   // into view so it's clear the run has moved on from category assignment.
   useEffect(() => {
     setStep(0);
+    // In daily mode the reveal scrolls to the "ideal slots" result instead, so
+    // don't yank the view down to the season playback here.
+    if (suppressInitialScroll) return;
     scrollIntoViewSmooth(sectionRef.current, "start");
-  }, [simulation]);
+  }, [simulation, suppressInitialScroll]);
 
   // Push the freshly-revealed block into view after each advance so you don't
   // have to scroll to reach the next CTA. Skip the initial render.
@@ -1517,6 +1521,9 @@ function DailyChallengeGame({
   const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("assign");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [assignments, setAssignments] = useState<DailyTileAssignment[]>([]);
+  // The revealed "ideal slots" result — scrolled into view on Submit so the
+  // player lands on their score, not the season playback further down.
+  const resultRef = useRef<HTMLDivElement | null>(null);
 
   const playerNameByItemId = useMemo(() => {
     return new Map(
@@ -1581,6 +1588,8 @@ function DailyChallengeGame({
     });
   };
 
+  // Revealing is an explicit, confirmed step: the player taps Submit once all
+  // four slots are filled. No auto-lock, so they can re-shuffle picks first.
   const reveal = useCallback(() => {
     if (!complete || revealedAssignments.length !== CATEGORY_ORDER.length) return;
     setPhase("revealed");
@@ -1588,12 +1597,9 @@ function DailyChallengeGame({
   }, [complete, onComplete, revealedAssignments]);
 
   useEffect(() => {
-    if (phase !== "assign" || !complete || revealedAssignments.length !== CATEGORY_ORDER.length) {
-      return;
-    }
-    const timer = window.setTimeout(reveal, 450);
-    return () => window.clearTimeout(timer);
-  }, [complete, phase, reveal, revealedAssignments.length]);
+    if (phase !== "revealed") return;
+    scrollIntoViewSmooth(resultRef.current, "start");
+  }, [phase]);
 
   return (
     <section className="daily-challenge" aria-label={challenge.title}>
@@ -1710,13 +1716,25 @@ function DailyChallengeGame({
                         {CATEGORY_ORDER.map((category) => {
                           const meta = CATEGORY_META[category];
                           const isActive = picked?.category === category;
+                          // A category can only live on one clue. If another clue
+                          // already holds it, lock it here with a grey slash.
+                          const takenByOther = assignments.some(
+                            (assignment) =>
+                              assignment.category === category &&
+                              assignment.item.id !== item.id,
+                          );
                           return (
                             <button
                               type="button"
                               key={category}
-                              className={`daily-cat-chip ${isActive ? "is-active" : ""}`}
+                              className={`daily-cat-chip ${isActive ? "is-active" : ""} ${
+                                takenByOther ? "is-taken" : ""
+                              }`}
                               aria-pressed={isActive}
-                              aria-label={`${meta.label}${isActive ? " (assigned)" : ""}`}
+                              disabled={takenByOther}
+                              aria-label={`${meta.label}${isActive ? " (assigned)" : ""}${
+                                takenByOther ? " (already used)" : ""
+                              }`}
                               onClick={() => assignCategory(item, category)}
                             >
                               {meta.shortLabel}
@@ -1735,13 +1753,13 @@ function DailyChallengeGame({
             <div className="daily-actions">
               <span>{assignments.length}/4 slots assigned</span>
               <button type="button" className="primary-button" onClick={reveal} disabled={!complete}>
-                {complete ? "Revealing Players" : "Reveal Players"}
+                Submit
               </button>
             </div>
           ) : null}
 
           {phase === "revealed" ? (
-            <div className="daily-result">
+            <div className="daily-result" ref={resultRef}>
               <div className="daily-result__head">
                 <span className="eyebrow">{rating}</span>
                 <p>{score}/4 ideal slots</p>
@@ -1765,18 +1783,25 @@ function DailyChallengeGame({
                     </div>
                   );
                 })}
-                <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
-                  <span className="eyebrow">SG Total</span>
-                  <strong className="playoff-stat__value">
-                    {formatSg(
-                      revealedAssignments.reduce(
-                        (sum, item) => sum + item.season.sg[item.category],
-                        0,
-                      ),
-                    )}
-                  </strong>
-                  <span className="playoff-stat__meta">All categories</span>
-                </div>
+                {(() => {
+                  const total = revealedAssignments.reduce(
+                    (sum, item) => sum + item.season.sg[item.category],
+                    0,
+                  );
+                  return (
+                    <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
+                      <span className="eyebrow">SG Total</span>
+                      <strong
+                        className={`playoff-stat__value ${
+                          total < 0 ? "playoff-stat__value--negative" : ""
+                        }`}
+                      >
+                        {formatSg(total)}
+                      </strong>
+                      <span className="playoff-stat__meta">All categories</span>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           ) : null}
@@ -2056,6 +2081,7 @@ export function StrokesGainedGame() {
               mulligans={0}
               modeChips={["Daily Challenge", dailyChallenge.date]}
               onNewRound={resetDaily}
+              suppressInitialScroll
             />
           ) : null}
           {dailySimulation ? <AssignmentStats assignments={dailyAssignments} /> : null}
