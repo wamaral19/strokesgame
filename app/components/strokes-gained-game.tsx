@@ -743,11 +743,11 @@ function PlayoffStageBlock({
               <strong>{positionLabel(stage.position, stage.tied)}</strong>
             </div>
             <div>
-              <span className="eyebrow">FedEx Points</span>
+              <span className="eyebrow">FedEx Cup Points</span>
               <strong>{stage.fedExPoints}</strong>
             </div>
             <div>
-              <span className="eyebrow">FedEx Position</span>
+              <span className="eyebrow">FedEx Cup Position</span>
               <strong>
                 {stage.rankBefore} → {stage.rankAfter}
               </strong>
@@ -796,7 +796,7 @@ function RegularSeasonBlock({
       </div>
       <div className="playoff-summary__grid">
         <div>
-          <span className="eyebrow">FedEx Points</span>
+          <span className="eyebrow">FedEx Cup Points</span>
           <strong>{summary.points.toLocaleString()}</strong>
         </div>
         <div>
@@ -1668,10 +1668,9 @@ function DailyChallengeGame({
                     phase === "revealed" ? "is-revealed" : ""
                   }`}
                 >
-                  <span className="daily-tile__number">{tileNumber}</span>
-                  <MediaCard media={item.media} compact />
                   {phase === "revealed" ? (
                     <>
+                      <MediaCard media={item.media} compact />
                       <span className="daily-tile__reveal">
                         <strong>{playerName}</strong>
                         <span>
@@ -1691,28 +1690,41 @@ function DailyChallengeGame({
                       ) : null}
                     </>
                   ) : (
-                    <div
-                      className="daily-tile__cats"
-                      role="group"
-                      aria-label={`Assign a category to clue ${tileNumber}`}
-                    >
-                      {CATEGORY_ORDER.map((category) => {
-                        const meta = CATEGORY_META[category];
-                        const isActive = picked?.category === category;
-                        return (
-                          <button
-                            type="button"
-                            key={category}
-                            className={`daily-cat-chip ${isActive ? "is-active" : ""}`}
-                            aria-pressed={isActive}
-                            aria-label={`${meta.label}${isActive ? " (assigned)" : ""}`}
-                            onClick={() => assignCategory(item, category)}
-                          >
-                            {meta.shortLabel}
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <>
+                      <button
+                        type="button"
+                        className="daily-tile__expand"
+                        onClick={() => {
+                          setCurrentIndex(index);
+                          setPhase("browse");
+                        }}
+                        aria-label={`Expand clue ${tileNumber}`}
+                      >
+                        <MediaCard media={item.media} compact />
+                      </button>
+                      <div
+                        className="daily-tile__cats"
+                        role="group"
+                        aria-label={`Assign a category to clue ${tileNumber}`}
+                      >
+                        {CATEGORY_ORDER.map((category) => {
+                          const meta = CATEGORY_META[category];
+                          const isActive = picked?.category === category;
+                          return (
+                            <button
+                              type="button"
+                              key={category}
+                              className={`daily-cat-chip ${isActive ? "is-active" : ""}`}
+                              aria-pressed={isActive}
+                              aria-label={`${meta.label}${isActive ? " (assigned)" : ""}`}
+                              onClick={() => assignCategory(item, category)}
+                            >
+                              {meta.shortLabel}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
                   )}
                 </div>
               );
@@ -1753,6 +1765,18 @@ function DailyChallengeGame({
                     </div>
                   );
                 })}
+                <div className="playoff-stat playoff-stat--up daily-profile-stat daily-profile-stat--total">
+                  <span className="eyebrow">SG Total</span>
+                  <strong className="playoff-stat__value">
+                    {formatSg(
+                      revealedAssignments.reduce(
+                        (sum, item) => sum + item.season.sg[item.category],
+                        0,
+                      ),
+                    )}
+                  </strong>
+                  <span className="playoff-stat__meta">All categories</span>
+                </div>
               </div>
             </div>
           ) : null}
