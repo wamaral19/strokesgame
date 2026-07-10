@@ -654,13 +654,12 @@ function isTiedFinish(
   return random() >= soloProb;
 }
 
-function simulateEvent(
+function sampleEventSg(
   totalSg: number,
-  event: ScheduleEvent,
   index: number,
   seed: number,
   volatilityFactor: number,
-): EventResult {
+) {
   const random = createRandom(seed + index * 9973);
 
   // SG figures are season-long means, but any given week is a sample around
@@ -671,13 +670,29 @@ function simulateEvent(
   const spike = random() < 0.18 ? randomNormal(random) * 2.05 : 0;
   const weekSg = (baseNoise + spike) * WEEK_SG_SD * volatilityFactor;
   const courseFit = randomNormal(random) * COURSE_FIT_SD;
-  const playerSg = totalSg + weekSg + courseFit;
+  return totalSg + weekSg + courseFit;
+}
+
+function centerSeasonSg(samples: number[], targetAverage: number) {
+  if (samples.length === 0) return samples;
+  const average = samples.reduce((sum, value) => sum + value, 0) / samples.length;
+  const adjustment = targetAverage - average;
+  return samples.map((value) => value + adjustment);
+}
+
+function simulateEvent(
+  playerSg: number,
+  event: ScheduleEvent,
+  index: number,
+  seed: number,
+): EventResult {
+  const random = createRandom((seed + index * 9973) ^ 0xa53a9f1d);
 
   const { position, madeCut, tied } = resolveFinish(playerSg, event, random);
 
   return {
     event,
-    strokes: Number(playerSg.toFixed(2)),
+    strokes: round2(playerSg),
     position: madeCut ? position : 0,
     tied: madeCut && tied,
     madeCut,
@@ -1179,8 +1194,16 @@ export function simulateSeason(
     2.4,
   );
 
+  // Let the player have a random volatility profile, but keep the full
+  // regular-season sample honest: its average must match the build's Total SG.
+  const regularSeasonSgSamples = centerSeasonSg(
+    PREMIUM_2026_SCHEDULE.map((_, index) =>
+      sampleEventSg(totalSg, index, seed, volatilityFactor),
+    ),
+    totalSg,
+  );
   const results = PREMIUM_2026_SCHEDULE.map((event, index) =>
-    simulateEvent(totalSg, event, index, seed, volatilityFactor),
+    simulateEvent(regularSeasonSgSamples[index] ?? totalSg, event, index, seed),
   );
 
   // Results drive everything: the FedEx points banked across the regular season
