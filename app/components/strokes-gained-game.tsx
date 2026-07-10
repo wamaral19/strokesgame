@@ -401,14 +401,14 @@ function GameModeChooser({
               </p>
               <div className="mode-options">
                 <ModeOption
-                  active={statsMode === "blind"}
-                  title="Blind"
-                  onSelect={() => onStatsMode("blind")}
-                />
-                <ModeOption
                   active={statsMode === "show"}
                   title="Show Stats"
                   onSelect={() => onStatsMode("show")}
+                />
+                <ModeOption
+                  active={statsMode === "blind"}
+                  title="Blind"
+                  onSelect={() => onStatsMode("blind")}
                 />
               </div>
             </fieldset>
@@ -418,14 +418,14 @@ function GameModeChooser({
               <p className="mode-group__hint">Choose your time frame.</p>
               <div className="mode-options mode-options--trio">
                 <ModeOption
-                  active={yearMode === "all"}
-                  title="All Time"
-                  onSelect={() => onYearMode("all")}
-                />
-                <ModeOption
                   active={yearMode === "current"}
                   title="Current"
                   onSelect={() => onYearMode("current")}
+                />
+                <ModeOption
+                  active={yearMode === "all"}
+                  title="All Time"
+                  onSelect={() => onYearMode("all")}
                 />
                 <ModeOption
                   active={yearMode === "filter"}
@@ -2064,7 +2064,7 @@ export function StrokesGainedGame() {
   const [gameModeChosen, setGameModeChosen] = useState(false);
   const [gameVariant, setGameVariant] = useState<GameVariant>("classic");
   const [dailyDateKey, setDailyDateKey] = useState(() => easternDateKey());
-  const [statsMode, setStatsMode] = useState<StatsMode>("blind");
+  const [statsMode, setStatsMode] = useState<StatsMode>("show");
   const [fieldMode, setFieldMode] = useState<FieldMode>("entire");
   const [assignments, setAssignments] = useState<SlotAssignment[]>([]);
   const [dailyAssignments, setDailyAssignments] = useState<SlotAssignment[]>([]);
@@ -2303,7 +2303,7 @@ export function StrokesGainedGame() {
     setResetConfirmOpen(false);
     setGameModeChosen(false);
     setGameVariant("classic");
-    setStatsMode("blind");
+    setStatsMode("show");
     setFieldMode("entire");
     setAssignments([]);
     setDailyAssignments([]);
