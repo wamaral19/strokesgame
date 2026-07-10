@@ -547,15 +547,24 @@ function eventHasCut(kind: ScheduleEvent["kind"]) {
 const WEEK_SG_SD = 1.15;
 const COURSE_FIT_SD = 0.32;
 // Per-category week-to-week SD, used when a playoff event is broken out
-// category-by-category. The flatstick, irons, and driver swing hard week to
-// week; the short game (around the green) is the steadiest part of a bag. In
-// quadrature these land near the aggregate WEEK_SG_SD above so the
-// broken-out playoff variance feels the same as the regular season.
+// category-by-category. These feed a skewed distribution below: positive
+// deltas are compressed into category-specific upside caps, while bad weeks
+// have more room to run. Putting still bounces the most week to week, approach
+// owns the biggest positive ceiling, and around-the-green stays quietest.
 const CATEGORY_WEEK_SD: Record<CategoryKey, number> = {
-  offTee: 0.58,
-  approach: 0.65,
-  aroundGreen: 0.26,
-  putting: 0.74,
+  offTee: 0.56,
+  approach: 0.68,
+  aroundGreen: 0.24,
+  putting: 0.82,
+};
+const CATEGORY_DELTA_LIMITS: Record<
+  CategoryKey,
+  { upside: number; downside: number }
+> = {
+  offTee: { upside: 1.75, downside: 2.8 },
+  approach: { upside: 2.45, downside: 3.4 },
+  aroundGreen: { upside: 0.95, downside: 1.45 },
+  putting: { upside: 1.95, downside: 3.6 },
 };
 // SD of the field's weekly SG outcomes; sets how spread out a leaderboard is
 // and how random the top of it plays.
@@ -701,12 +710,31 @@ function simulateEvent(
   };
 }
 
+function softCapPositiveDelta(delta: number, cap: number) {
+  return cap * (1 - Math.exp(-delta / cap));
+}
+
+function skewCategoryDelta(
+  category: CategoryKey,
+  raw: number,
+  volatilityFactor: number,
+) {
+  const sampled = raw * CATEGORY_WEEK_SD[category] * volatilityFactor;
+  const limits = CATEGORY_DELTA_LIMITS[category];
+
+  if (sampled >= 0) {
+    return softCapPositiveDelta(sampled, limits.upside);
+  }
+
+  return Math.max(sampled, -limits.downside);
+}
+
 // Playoff events are revealed category-by-category, so instead of one aggregate
 // week draw we sample each of the four SG categories around its own season mean
-// with its own variance (CATEGORY_WEEK_SD). A shared "spike" term ties the four
-// together — a genuinely hot week tends to light up every part of the bag — on
-// top of each category's independent noise. The four week values sum to the
-// total SG that then sets the finish through the same field model.
+// with its own skewed variance. A shared form term ties the four together, but
+// upside is compressed by category so one hot draw cannot casually produce
+// all-time putting, approach, and driving weeks at once. The four week values
+// sum to the total SG that then sets the finish through the same field model.
 function simulatePlayoffEvent(
   categorySg: Record<CategoryKey, number>,
   event: ScheduleEvent,
@@ -715,14 +743,18 @@ function simulatePlayoffEvent(
   volatilityFactor: number,
 ) {
   const random = createRandom(seed + index * 9973);
-  const spikeActive = random() < 0.18;
-  const spikeMagnitude = spikeActive ? randomNormal(random) * 1.45 : 0;
+  const formActive = random() < 0.18;
+  const formMagnitude = formActive ? randomNormal(random) * 1.15 : 0;
 
   const categories: CategoryBreakdown[] = CATEGORY_ORDER.map((category) => {
     const mean = categorySg[category];
-    const base = randomNormal(random);
-    const weekValue =
-      mean + (base + spikeMagnitude) * CATEGORY_WEEK_SD[category] * volatilityFactor;
+    const categoryNoise = randomNormal(random);
+    const delta = skewCategoryDelta(
+      category,
+      categoryNoise + formMagnitude,
+      volatilityFactor,
+    );
+    const weekValue = mean + delta;
     return {
       category,
       mean: round2(mean),
