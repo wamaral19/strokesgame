@@ -540,18 +540,22 @@ function eventHasCut(kind: ScheduleEvent["kind"]) {
 
 // SD of one player's week-to-week SG around their season mean (per round). The
 // per-season volatilityFactor scales this, so streaky builds swing far more.
-const WEEK_SG_SD = 0.9;
-const COURSE_FIT_SD = 0.25;
+// Real event logs are much lumpier than a narrow season-mean model: a +0.7 SG
+// player still posts plenty of +2 to +3 weeks, and those top finishes matter a
+// lot in the FedEx curve. Keep the field model intact, but let the player week
+// draw breathe enough to create that feast/famine shape.
+const WEEK_SG_SD = 1.15;
+const COURSE_FIT_SD = 0.32;
 // Per-category week-to-week SD, used when a playoff event is broken out
 // category-by-category. The flatstick, irons, and driver swing hard week to
 // week; the short game (around the green) is the steadiest part of a bag. In
-// quadrature these sum to ~0.9, matching the aggregate WEEK_SG_SD above so the
+// quadrature these land near the aggregate WEEK_SG_SD above so the
 // broken-out playoff variance feels the same as the regular season.
 const CATEGORY_WEEK_SD: Record<CategoryKey, number> = {
-  offTee: 0.5,
-  approach: 0.55,
-  aroundGreen: 0.2,
-  putting: 0.62,
+  offTee: 0.58,
+  approach: 0.65,
+  aroundGreen: 0.26,
+  putting: 0.74,
 };
 // SD of the field's weekly SG outcomes; sets how spread out a leaderboard is
 // and how random the top of it plays.
@@ -660,11 +664,11 @@ function simulateEvent(
   const random = createRandom(seed + index * 9973);
 
   // SG figures are season-long means, but any given week is a sample around
-  // that mean. Most weeks cluster near the mean, but ~14% are "spike weeks"
+  // that mean. Most weeks cluster near the mean, but ~18% are "spike weeks"
   // where a player runs way hot or ice cold (gain 5 one week, lose 1 the next).
   // The per-season volatilityFactor decides if this build is streaky or steady.
   const baseNoise = randomNormal(random);
-  const spike = random() < 0.14 ? randomNormal(random) * 1.7 : 0;
+  const spike = random() < 0.18 ? randomNormal(random) * 2.05 : 0;
   const weekSg = (baseNoise + spike) * WEEK_SG_SD * volatilityFactor;
   const courseFit = randomNormal(random) * COURSE_FIT_SD;
   const playerSg = totalSg + weekSg + courseFit;
@@ -696,8 +700,8 @@ function simulatePlayoffEvent(
   volatilityFactor: number,
 ) {
   const random = createRandom(seed + index * 9973);
-  const spikeActive = random() < 0.14;
-  const spikeMagnitude = spikeActive ? randomNormal(random) * 1.2 : 0;
+  const spikeActive = random() < 0.18;
+  const spikeMagnitude = spikeActive ? randomNormal(random) * 1.45 : 0;
 
   const categories: CategoryBreakdown[] = CATEGORY_ORDER.map((category) => {
     const mean = categorySg[category];
