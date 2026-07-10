@@ -205,9 +205,9 @@ function ResetConfirmDialog({
   );
 }
 
-// A centered modal that surfaces the game's "next step" so the CTA to advance is
-// impossible to miss. Its button performs the action directly — one tap, no
-// intermediate "open then act" step — and it auto-focuses so Enter also works.
+// A centered modal that surfaces the game's "next step" after the recap has had
+// a beat to breathe. If dismissed, the same action remains inline right where
+// the latest block ended.
 function NextStepDialog({
   eyebrow,
   title,
@@ -222,10 +222,33 @@ function NextStepDialog({
   onAction: () => void;
 }) {
   const actionRef = useRef<HTMLButtonElement | null>(null);
+  const [ready, setReady] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
-    actionRef.current?.focus();
-  }, []);
+    setReady(false);
+    setDismissed(false);
+    const timer = window.setTimeout(() => setReady(true), 2000);
+    return () => window.clearTimeout(timer);
+  }, [actionLabel, title]);
+
+  useEffect(() => {
+    if (ready && !dismissed) {
+      actionRef.current?.focus();
+    }
+  }, [dismissed, ready]);
+
+  if (dismissed) {
+    return (
+      <div className="next-step-inline">
+        <button type="button" className="primary-button" onClick={onAction}>
+          {actionLabel}
+        </button>
+      </div>
+    );
+  }
+
+  if (!ready) return null;
 
   return (
     <div
@@ -236,6 +259,14 @@ function NextStepDialog({
     >
       <div className="reset-confirm__backdrop" />
       <div className="reset-confirm__panel next-step__panel">
+        <button
+          type="button"
+          className="next-step__close"
+          onClick={() => setDismissed(true)}
+          aria-label="Close next step popup"
+        >
+          X
+        </button>
         {eyebrow ? <span className="eyebrow">{eyebrow}</span> : null}
         <h2 id="next-step-title">{title}</h2>
         {detail ? <p className="next-step__detail">{detail}</p> : null}
