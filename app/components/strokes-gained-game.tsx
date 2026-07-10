@@ -551,12 +551,6 @@ function SpinnerPanel({
   onStartSpin: () => void;
 }) {
   const canAssign = phase === "ready" && !complete;
-  const revealedAssignments = Array.from(assignmentByCategory.values()).filter(
-    (assignment) => assignment.category !== pendingCategory,
-  );
-  const idealBySeason = optimalCategoryBySeason(
-    revealedAssignments.map((assignment) => assignment.season),
-  );
   return (
     <section className="spinner-panel" aria-label="Current player and year">
       <div className="spinner-panel__top">
@@ -592,6 +586,7 @@ function SpinnerPanel({
             const interactive = canAssign && !locked;
 
             if (assignment && !isPending) {
+              const selectedValue = assignment.season.sg[category];
               return (
                 <div className="classic-assignment-card" key={category}>
                   <div className="classic-assignment-card__head">
@@ -608,10 +603,9 @@ function SpinnerPanel({
                   <strong>
                     {assignment.season.player} {assignment.season.year}
                   </strong>
-                  <StatList
-                    season={assignment.season}
-                    idealCategory={idealBySeason.get(assignment.season.id)}
-                  />
+                  <span className={`classic-assignment-card__value ${selectedValue < 0 ? "negative" : ""}`}>
+                    {CATEGORY_META[category].statLabel}: {formatSg(selectedValue)}
+                  </span>
                 </div>
               );
             }
@@ -2334,6 +2328,8 @@ export function StrokesGainedGame() {
           </button>
         </div>
       </section>
+
+      {simulation ? null : <AssignmentStats assignments={revealedAssignments} />}
 
       {simulation ? (
         <>

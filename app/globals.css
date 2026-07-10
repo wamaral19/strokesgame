@@ -644,6 +644,24 @@ button {
   text-transform: none;
 }
 
+.classic-assignment-card__value {
+  display: block;
+  margin-top: 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 10px;
+  color: var(--brand-deep);
+  font-family: var(--font-condensed);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.classic-assignment-card__value.negative {
+  color: var(--brand-flag);
+}
+
 .classic-assignment-total {
   display: flex;
   align-items: baseline;
