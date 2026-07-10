@@ -164,7 +164,8 @@ function HowToPlayDialog({ onClose }: { onClose: () => void }) {
           </p>
           <p>
             Strokes Gained measures how many shots a player gains or loses against the field in a
-            specific area: off the tee, approach, around the green, or putting. Higher is better.
+            specific area: off the tee (OTT), approach (APP), around the green (ARG), and putting
+            (PUTT). Higher is better.
           </p>
         </div>
         <button type="button" className="primary-button" onClick={onClose}>
@@ -893,6 +894,7 @@ function FinalBlock({
   assignments,
   mulligans,
   modeChips,
+  dailyIdealMatches,
   blockRef,
   onNewRound,
 }: {
@@ -900,9 +902,11 @@ function FinalBlock({
   assignments: SlotAssignment[];
   mulligans: number;
   modeChips: string[];
+  dailyIdealMatches?: number;
   blockRef?: (node: HTMLElement | null) => void;
   onNewRound: () => void;
 }) {
+  const isDailyRecap = dailyIdealMatches !== undefined;
   // Wins span the whole season: regular-season events plus any playoff-event
   // wins, which now live in `playoffStages` rather than `results`.
   const wins = [
@@ -960,19 +964,25 @@ function FinalBlock({
       `🏆 FedEx Cup: No. ${simulation.fedExRank}`,
       `💰 On Course Earnings: ${formatCurrency(simulation.earnings)}`,
       `🥇 Wins: ${wins.length}`,
-      `🔁 Mulligans: ${mulligans}`,
+      isDailyRecap
+        ? `🎯 Ideal Matches: ${dailyIdealMatches}/4`
+        : `🔁 Mulligans: ${mulligans}`,
       "",
       `Mode: ${modeChips.join(" · ")}`,
       "",
-      "Lineup:",
-      ...lineup.map(
-        (slot) =>
-          `• ${CATEGORY_META[slot.category].statLabel}: ${
-            slot.season
-              ? `${slot.season.player}, ${slot.season.year}, ${formatSg(slot.season.sg[slot.category])}`
-              : "—"
-          }`,
-      ),
+      isDailyRecap
+        ? `Daily Score: ${dailyIdealMatches}/4 ideal categories`
+        : "Lineup:",
+      ...(isDailyRecap
+        ? []
+        : lineup.map(
+            (slot) =>
+              `• ${CATEGORY_META[slot.category].statLabel}: ${
+                slot.season
+                  ? `${slot.season.player}, ${slot.season.year}, ${formatSg(slot.season.sg[slot.category])}`
+                  : "—"
+              }`,
+          )),
       `Total Strokes Gained: ${formatSg(simulation.totalSg)}`,
     ];
     if (notableFinishes.length > 0) {
@@ -987,6 +997,8 @@ function FinalBlock({
     }
     return lines.join("\n");
   }, [
+    dailyIdealMatches,
+    isDailyRecap,
     lineup,
     modeChips,
     mulligans,
@@ -1037,8 +1049,8 @@ function FinalBlock({
           <strong>{wins.length}</strong>
         </div>
         <div>
-          <span className="eyebrow">Mulligans</span>
-          <strong>{mulligans}</strong>
+          <span className="eyebrow">{isDailyRecap ? "Ideal Matches" : "Mulligans"}</span>
+          <strong>{isDailyRecap ? `${dailyIdealMatches}/4` : mulligans}</strong>
         </div>
       </div>
 
@@ -1047,32 +1059,45 @@ function FinalBlock({
         <span className="recap-mode__value">{modeChips.join(" · ")}</span>
       </div>
 
-      {/* Four quadrants — the lineup with each player's category performance,
-          then a merged total-strokes-gained row along the bottom. */}
-      <div className="recap-lineup-grid" aria-label="Your lineup">
-        {lineup.map((slot) => {
-          const value = slot.season?.sg[slot.category];
-          return (
-            <div className="recap-lineup-cell" key={slot.category}>
-              <span className="recap-lineup-cat">{CATEGORY_META[slot.category].statLabel}</span>
-              <div className="recap-lineup-line">
-                <span className="recap-lineup-player">
-                  {slot.season ? `${slot.season.player}, ${slot.season.year}` : "—"}
-                </span>
-                <span className={`recap-lineup-val ${value !== undefined && value < 0 ? "is-negative" : ""}`}>
-                  {value !== undefined ? formatSg(value) : "—"}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-        <div className="recap-lineup-total">
-          Total Strokes Gained:{" "}
-          <span className={simulation.totalSg < 0 ? "is-negative" : ""}>
-            {formatSg(simulation.totalSg)}
-          </span>
+      {isDailyRecap ? (
+        <div className="recap-daily-score" aria-label="Daily challenge score">
+          <div>
+            <span className="recap-lineup-cat">Ideal Categories</span>
+            <strong>{dailyIdealMatches}/4</strong>
+          </div>
+          <div>
+            <span className="recap-lineup-cat">Total Strokes Gained</span>
+            <strong className={simulation.totalSg < 0 ? "is-negative" : ""}>
+              {formatSg(simulation.totalSg)}
+            </strong>
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="recap-lineup-grid" aria-label="Your lineup">
+          {lineup.map((slot) => {
+            const value = slot.season?.sg[slot.category];
+            return (
+              <div className="recap-lineup-cell" key={slot.category}>
+                <span className="recap-lineup-cat">{CATEGORY_META[slot.category].statLabel}</span>
+                <div className="recap-lineup-line">
+                  <span className="recap-lineup-player">
+                    {slot.season ? `${slot.season.player}, ${slot.season.year}` : "—"}
+                  </span>
+                  <span className={`recap-lineup-val ${value !== undefined && value < 0 ? "is-negative" : ""}`}>
+                    {value !== undefined ? formatSg(value) : "—"}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          <div className="recap-lineup-total">
+            Total Strokes Gained:{" "}
+            <span className={simulation.totalSg < 0 ? "is-negative" : ""}>
+              {formatSg(simulation.totalSg)}
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="notable-finishes">
         <span className="notable-finishes__title">Notable Finishes</span>
@@ -1266,6 +1291,7 @@ function SeasonPlayback({
   assignments,
   mulligans,
   modeChips,
+  dailyIdealMatches,
   onNewRound,
   suppressInitialScroll = false,
 }: {
@@ -1273,6 +1299,7 @@ function SeasonPlayback({
   assignments: SlotAssignment[];
   mulligans: number;
   modeChips: string[];
+  dailyIdealMatches?: number;
   onNewRound: () => void;
   suppressInitialScroll?: boolean;
 }) {
@@ -1378,6 +1405,7 @@ function SeasonPlayback({
             assignments={assignments}
             mulligans={mulligans}
             modeChips={modeChips}
+            dailyIdealMatches={dailyIdealMatches}
             blockRef={setCurrentRef}
             onNewRound={onNewRound}
           />
@@ -1592,7 +1620,7 @@ function DailyChallengeGame({
   onRestart,
 }: {
   challenge: DailyChallenge;
-  onComplete: (assignments: SlotAssignment[]) => void;
+  onComplete: (assignments: SlotAssignment[], idealMatches: number) => void;
   onRestart: () => void;
 }) {
   const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("assign");
@@ -1698,8 +1726,8 @@ function DailyChallengeGame({
     // A perfect run has nothing to spin, so hand off to the season playback (and
     // its FedEx Cup popup) right away. A random-year run defers that until the
     // spin animation finishes — see the spin effect below.
-    if (ballKnower) onComplete(resolved);
-  }, [assignments, complete, idealByItemId, onComplete]);
+    if (ballKnower) onComplete(resolved, score);
+  }, [assignments, complete, idealByItemId, onComplete, score]);
 
   useEffect(() => {
     if (phase !== "revealed") return;
@@ -1723,7 +1751,7 @@ function DailyChallengeGame({
       timers.push(settle);
     });
     const surfacePlayback = window.setTimeout(() => {
-      onComplete(resolvedAssignments);
+      onComplete(resolvedAssignments, score);
     }, CATEGORY_ORDER.length * DAILY_SPIN_STEP_MS + DAILY_PLAYBACK_DELAY_MS);
     timers.push(surfacePlayback);
     return () => {
@@ -1732,7 +1760,7 @@ function DailyChallengeGame({
         window.clearInterval(timer);
       });
     };
-  }, [phase, isBallKnower, resolvedAssignments, onComplete]);
+  }, [phase, isBallKnower, resolvedAssignments, onComplete, score]);
 
   // Per-category rows for the reveal rail. A settled row shows the resolved
   // season; the one currently spinning flickers through the player's real
@@ -1882,12 +1910,14 @@ function DailyChallengeGame({
                             <button
                               type="button"
                               key={category}
-                              className={`daily-cat-chip ${isActive ? "is-active" : ""} ${
+                              className={`daily-cat-chip daily-cat-chip--${category} ${
+                                isActive ? "is-active" : ""
+                              } ${
                                 takenByOther ? "is-taken" : ""
                               }`}
                               aria-pressed={isActive}
                               disabled={takenByOther}
-                              aria-label={`${meta.label}${isActive ? " (assigned)" : ""}${
+                              aria-label={`${meta.label} (${meta.shortLabel})${isActive ? " assigned" : ""}${
                                 takenByOther ? " (already used)" : ""
                               }`}
                               onClick={() => assignCategory(item, category)}
@@ -1978,6 +2008,7 @@ export function StrokesGainedGame() {
   const [fieldMode, setFieldMode] = useState<FieldMode>("entire");
   const [assignments, setAssignments] = useState<SlotAssignment[]>([]);
   const [dailyAssignments, setDailyAssignments] = useState<SlotAssignment[]>([]);
+  const [dailyIdealMatches, setDailyIdealMatches] = useState<number | undefined>();
   const [dailyRunId, setDailyRunId] = useState(0);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [howToPlayOpen, setHowToPlayOpen] = useState(false);
@@ -2127,6 +2158,7 @@ export function StrokesGainedGame() {
 
   useEffect(() => {
     setDailyAssignments([]);
+    setDailyIdealMatches(undefined);
     setDailyRunId((value) => value + 1);
   }, [dailyChallenge.id]);
 
@@ -2204,6 +2236,7 @@ export function StrokesGainedGame() {
 
   const resetDaily = () => {
     setDailyAssignments([]);
+    setDailyIdealMatches(undefined);
     setDailyRunId((value) => value + 1);
   };
 
@@ -2216,6 +2249,7 @@ export function StrokesGainedGame() {
     setFieldMode("entire");
     setAssignments([]);
     setDailyAssignments([]);
+    setDailyIdealMatches(undefined);
     setDailyRunId((value) => value + 1);
     setCurrentSeason(undefined);
     setDisplayPlayer("...");
@@ -2240,6 +2274,7 @@ export function StrokesGainedGame() {
             setGameVariant(mode);
             if (mode === "daily") {
               clearSpinTimers();
+              setHowToPlayOpen(true);
             }
           }}
           onStatsMode={setStatsMode}
@@ -2269,7 +2304,10 @@ export function StrokesGainedGame() {
           <DailyChallengeGame
             key={`${dailyChallenge.id}-${dailyRunId}`}
             challenge={dailyChallenge}
-            onComplete={setDailyAssignments}
+            onComplete={(nextAssignments, idealMatches) => {
+              setDailyAssignments(nextAssignments);
+              setDailyIdealMatches(idealMatches);
+            }}
             onRestart={() => {
               resetDaily();
               setGameModeChosen(false);
@@ -2281,11 +2319,11 @@ export function StrokesGainedGame() {
               assignments={dailyAssignments}
               mulligans={0}
               modeChips={["Daily Challenge", dailyChallenge.date]}
+              dailyIdealMatches={dailyIdealMatches}
               onNewRound={resetDaily}
               suppressInitialScroll
             />
           ) : null}
-          {dailySimulation ? <AssignmentStats assignments={dailyAssignments} /> : null}
           <SiteFooter />
         </>
       ) : (

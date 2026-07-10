@@ -1678,9 +1678,11 @@ button {
 }
 
 .daily-cat-chip {
-  border: 1px solid var(--line-strong);
-  background: rgba(255, 250, 240, 0.9);
-  color: var(--brand-ink);
+  --daily-cat-accent: var(--brand-deep);
+  --daily-cat-surface: rgba(42, 112, 70, 0.12);
+  border: 2px solid color-mix(in srgb, var(--daily-cat-accent) 70%, var(--brand-ink));
+  background: var(--daily-cat-surface);
+  color: color-mix(in srgb, var(--daily-cat-accent) 76%, var(--brand-ink));
   padding: 9px 4px;
   font-family: var(--font-condensed);
   font-size: 0.72rem;
@@ -1689,16 +1691,48 @@ button {
   line-height: 1;
   text-transform: uppercase;
   cursor: pointer;
+  box-shadow: inset 0 -2px 0 rgba(26, 26, 26, 0.16);
+  transition:
+    background 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 140ms ease;
+}
+
+.daily-cat-chip--putting {
+  --daily-cat-accent: #287047;
+  --daily-cat-surface: rgba(40, 112, 71, 0.14);
+}
+
+.daily-cat-chip--aroundGreen {
+  --daily-cat-accent: #8b5a16;
+  --daily-cat-surface: rgba(139, 90, 22, 0.14);
+}
+
+.daily-cat-chip--approach {
+  --daily-cat-accent: #245f9f;
+  --daily-cat-surface: rgba(36, 95, 159, 0.14);
+}
+
+.daily-cat-chip--offTee {
+  --daily-cat-accent: #8f2d3f;
+  --daily-cat-surface: rgba(143, 45, 63, 0.14);
 }
 
 .daily-cat-chip:hover:not(.is-active):not(.is-taken) {
-  border-color: var(--brand-ink);
+  background: color-mix(in srgb, var(--daily-cat-accent) 22%, #fffaf0);
+  border-color: var(--daily-cat-accent);
+  color: var(--brand-ink);
+  transform: translateY(-1px);
 }
 
 .daily-cat-chip.is-active {
   border-color: var(--brand-ink);
-  background: var(--brand-ink);
+  background: var(--daily-cat-accent);
   color: var(--brand-cream);
+  box-shadow:
+    inset 0 -2px 0 rgba(26, 26, 26, 0.2),
+    0 0 0 2px rgba(26, 26, 26, 0.16);
 }
 
 /* A category already placed on another clue is locked here — greyed out with a
@@ -1707,6 +1741,8 @@ button {
   position: relative;
   color: rgba(26, 26, 26, 0.35);
   background: rgba(230, 228, 220, 0.6);
+  border-color: rgba(26, 26, 26, 0.22);
+  box-shadow: none;
   cursor: not-allowed;
 }
 
@@ -3087,6 +3123,34 @@ button {
 }
 
 .recap-lineup-total .is-negative {
+  color: var(--brand-flag);
+}
+
+.recap-daily-score {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  border: 1px solid var(--line);
+  background: var(--line);
+  margin-top: 16px;
+}
+
+.recap-daily-score > div {
+  display: grid;
+  gap: 8px;
+  background: #fffaf0;
+  padding: 14px 16px;
+}
+
+.recap-daily-score strong {
+  font-family: var(--font-condensed);
+  font-size: clamp(1.75rem, 6vw, 2.6rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+}
+
+.recap-daily-score .is-negative {
   color: var(--brand-flag);
 }
 
