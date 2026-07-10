@@ -530,7 +530,9 @@ function SpinnerPanel({
   needsSpin,
   pendingCategory,
   statsReveal,
+  totalSg,
   onAssign,
+  onMulligan,
   onStartSpin,
 }: {
   displayPlayer: string;
@@ -543,10 +545,18 @@ function SpinnerPanel({
   needsSpin: boolean;
   pendingCategory?: CategoryKey;
   statsReveal?: React.ReactNode;
+  totalSg: number;
   onAssign: (category: CategoryKey) => void;
+  onMulligan: (category: CategoryKey) => void;
   onStartSpin: () => void;
 }) {
   const canAssign = phase === "ready" && !complete;
+  const revealedAssignments = Array.from(assignmentByCategory.values()).filter(
+    (assignment) => assignment.category !== pendingCategory,
+  );
+  const idealBySeason = optimalCategoryBySeason(
+    revealedAssignments.map((assignment) => assignment.season),
+  );
   return (
     <section className="spinner-panel" aria-label="Current player and year">
       <div className="spinner-panel__top">
@@ -568,29 +578,62 @@ function SpinnerPanel({
         ) : null}
       </div>
       {statsReveal}
-      <div className="classic-assignment-grid" aria-label="Assign current player to category">
-        {CATEGORY_ORDER.map((category) => {
-          const filled = assignmentByCategory.has(category);
-          const isPending = category === pendingCategory;
-          // Earlier picks are locked; the current spin's player can still be
-          // moved between open slots (or cleared out of their pending slot).
-          const locked = filled && !isPending;
-          const interactive = canAssign && !locked;
-          return (
-            <button
-              type="button"
-              className={`classic-assignment-slot ${isPending ? "is-pending" : ""}`}
-              key={category}
-              disabled={!interactive}
-              onClick={() => onAssign(category)}
-            >
-              <span className="eyebrow">{ZONE_META[category].label}</span>
-              <strong>
-                {isPending ? "Selected" : filled ? "Filled" : canAssign ? "Assign" : "Wait"}
-              </strong>
-            </button>
-          );
-        })}
+      <div className="classic-selection-stage">
+        <div className="classic-selection-art" aria-hidden="true">
+          <img src="/Golf Game Drawing.webp" alt="" />
+        </div>
+        <div className="classic-assignment-grid" aria-label="Assign current player to category">
+          {CATEGORY_ORDER.map((category) => {
+            const assignment = assignmentByCategory.get(category);
+            const isPending = category === pendingCategory;
+            // Earlier picks are locked; the current spin's player can still be
+            // moved between open slots (or cleared out of their pending slot).
+            const locked = Boolean(assignment) && !isPending;
+            const interactive = canAssign && !locked;
+
+            if (assignment && !isPending) {
+              return (
+                <div className="classic-assignment-card" key={category}>
+                  <div className="classic-assignment-card__head">
+                    <span className="eyebrow">{ZONE_META[category].label}</span>
+                    <button
+                      type="button"
+                      className="mulligan-button"
+                      onClick={() => onMulligan(category)}
+                      aria-label={`Mulligan ${ZONE_META[category].label} — drop ${assignment.season.player} and respin`}
+                    >
+                      Mulligan
+                    </button>
+                  </div>
+                  <strong>
+                    {assignment.season.player} {assignment.season.year}
+                  </strong>
+                  <StatList
+                    season={assignment.season}
+                    idealCategory={idealBySeason.get(assignment.season.id)}
+                  />
+                </div>
+              );
+            }
+
+            return (
+              <button
+                type="button"
+                className={`classic-assignment-slot ${isPending ? "is-pending" : ""}`}
+                key={category}
+                disabled={!interactive}
+                onClick={() => onAssign(category)}
+              >
+                <span className="eyebrow">{ZONE_META[category].label}</span>
+                <strong>{isPending ? "Selected" : canAssign ? "Assign" : "Wait"}</strong>
+              </button>
+            );
+          })}
+        </div>
+        <div className="classic-assignment-total" aria-label="Total strokes gained">
+          <span className="eyebrow">Total SG</span>
+          <strong className={totalSg < 0 ? "negative" : ""}>{formatSg(totalSg)}</strong>
+        </div>
       </div>
       {needsSpin && !complete ? (
         <div className="classic-spin-action">
@@ -628,74 +671,6 @@ function StatList({
   );
 }
 
-function ZoneSlot({
-  category,
-  assignment,
-  onAssign,
-  onMulligan,
-  disabled,
-  readOnly,
-  concealStats,
-}: {
-  category: CategoryKey;
-  assignment?: SlotAssignment;
-  onAssign: (category: CategoryKey) => void;
-  onMulligan: (category: CategoryKey) => void;
-  disabled: boolean;
-  readOnly?: boolean;
-  concealStats?: boolean;
-}) {
-  const zone = ZONE_META[category];
-  const canAssign = !assignment && !disabled && !readOnly;
-
-  if (assignment) {
-    const selectedValue = assignment.season.sg[category];
-    const shownValue = concealStats ? "--" : formatSg(selectedValue);
-    return (
-      <div
-        className={`course-zone ${zone.className} course-zone--filled`}
-        aria-label={`${zone.label} filled by ${assignment.season.player}`}
-      >
-        <span className="course-zone__head">
-          <span className="course-zone__label">{zone.label}</span>
-          <button
-            type="button"
-            className="mulligan-button"
-            onClick={() => onMulligan(category)}
-            aria-label={`Mulligan ${zone.label} — drop ${assignment.season.player} and respin`}
-          >
-            Mulligan
-          </button>
-        </span>
-
-        <span className="course-zone__player">
-          <strong>{assignment.season.player}</strong>
-          <span className="course-zone__meta">
-            <span>{assignment.season.year}</span>
-            <em className={!concealStats && selectedValue < 0 ? "negative" : ""}>{shownValue}</em>
-          </span>
-        </span>
-      </div>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className={`course-zone ${zone.className}`}
-      disabled={!canAssign}
-      onClick={() => onAssign(category)}
-      aria-label={`Assign current player to ${zone.label}`}
-    >
-      <span className="course-zone__head">
-        <span className="course-zone__label">{zone.label}</span>
-        <span className="course-zone__state">{readOnly ? "Open" : canAssign ? "Assign" : "Wait"}</span>
-      </span>
-      <span className="course-zone__empty" />
-    </button>
-  );
-}
-
 function AssignmentStats({ assignments }: { assignments: SlotAssignment[] }) {
   if (assignments.length === 0) return null;
 
@@ -722,65 +697,6 @@ function AssignmentStats({ assignments }: { assignments: SlotAssignment[] }) {
     </section>
   );
 }
-
-function CourseBoard({
-  assignmentByCategory,
-  onAssign,
-  onMulligan,
-  disabled,
-  mulligans,
-  readOnly,
-  totalSg,
-  concealedSeasonId,
-}: {
-  assignmentByCategory: Map<CategoryKey, SlotAssignment>;
-  onAssign: (category: CategoryKey) => void;
-  onMulligan: (category: CategoryKey) => void;
-  disabled: boolean;
-  mulligans: number;
-  readOnly?: boolean;
-  totalSg: number;
-  concealedSeasonId?: string;
-}) {
-  return (
-    <section className="course-board" aria-label="Golf category board">
-      <div className="course-board__art">
-        <img src="/Golf Game Drawing.webp" alt="" className="course-board__image" />
-      </div>
-      <div className="course-zone-rail">
-        {CATEGORY_ORDER.map((category) => (
-          <ZoneSlot
-            key={category}
-            category={category}
-            assignment={assignmentByCategory.get(category)}
-            onAssign={onAssign}
-            onMulligan={onMulligan}
-            disabled={disabled}
-            readOnly={readOnly}
-            concealStats={assignmentByCategory.get(category)?.season.id === concealedSeasonId}
-          />
-        ))}
-      </div>
-      {/* Compact total that rides on top of the course art on mobile; hidden on
-          desktop, where the score strip in the left rail carries the total. */}
-      <div className="course-board__total" aria-label="Total strokes gained">
-        <span className="eyebrow">Total SG</span>
-        <strong className={totalSg < 0 ? "negative" : ""}>{formatSg(totalSg)}</strong>
-      </div>
-      <div className="mulligan-rail" aria-label={`Mulligans used: ${mulligans}`}>
-        {Array.from({ length: mulligans }).map((_, index) => (
-          <img
-            key={index}
-            src="/Groundhog Image.png"
-            alt="Mulligan used"
-            className="mulligan-rail__stamp"
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
 
 // One category reel inside a playoff event: it spins random SG values around the
 // player's season mean for ~0.9s, then locks on the week's actual value and
@@ -2101,7 +2017,6 @@ export function StrokesGainedGame() {
   );
 
   const complete = assignments.length === CATEGORY_ORDER.length;
-  const totalSg = totalSelectedSg(assignments);
   const simulation = useMemo(() => {
     if (!complete) return undefined;
     return simulateSeason(categorySgFromAssignments(assignments), buildSeed(assignments));
@@ -2126,11 +2041,11 @@ export function StrokesGainedGame() {
     return assignments.find((assignment) => assignment.season.id === currentSeason.id)?.category;
   }, [assignments, currentSeason, needsSpin]);
 
-  const concealedSeasonId = statsMode === "blind" && needsSpin ? currentSeason?.id : undefined;
+  const pendingSeasonId = needsSpin ? currentSeason?.id : undefined;
   const revealedAssignments = useMemo(() => {
-    if (!concealedSeasonId) return assignments;
-    return assignments.filter((assignment) => assignment.season.id !== concealedSeasonId);
-  }, [assignments, concealedSeasonId]);
+    if (!pendingSeasonId) return assignments;
+    return assignments.filter((assignment) => assignment.season.id !== pendingSeasonId);
+  }, [assignments, pendingSeasonId]);
   const revealedTotalSg = totalSelectedSg(revealedAssignments);
 
   const clearSpinTimers = useCallback(() => {
@@ -2408,38 +2323,17 @@ export function StrokesGainedGame() {
                 </div>
               ) : null
             }
+            totalSg={revealedTotalSg}
             onAssign={handleAssign}
+            onMulligan={handleMulligan}
             onStartSpin={handleStartSpin}
           />
 
-          <div className="score-strip compact" aria-label="Run status">
-            <div>
-              <span className="eyebrow">Slots</span>
-              <strong>{assignments.length}/4</strong>
-            </div>
-            <div>
-              <span className="eyebrow">Total SG</span>
-              <strong>{formatSg(revealedTotalSg)}</strong>
-            </div>
-          </div>
           <button className={complete ? "primary-button" : "ghost-button"} type="button" onClick={resetGame}>
             New Round
           </button>
         </div>
-
-        <CourseBoard
-          assignmentByCategory={assignmentByCategory}
-          onAssign={handleAssign}
-          onMulligan={handleMulligan}
-          disabled={phase !== "ready" || complete}
-          mulligans={mulligans}
-          readOnly
-          totalSg={revealedTotalSg}
-          concealedSeasonId={concealedSeasonId}
-        />
       </section>
-
-      {simulation ? null : <AssignmentStats assignments={revealedAssignments} />}
 
       {simulation ? (
         <>
@@ -2451,7 +2345,6 @@ export function StrokesGainedGame() {
             onNewRound={resetGame}
             suppressInitialScroll
           />
-          <AssignmentStats assignments={assignments} />
         </>
       ) : null}
 

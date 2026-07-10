@@ -370,17 +370,16 @@ button {
 
 .play-layout {
   display: grid;
-  grid-template-columns: minmax(220px, 0.38fr) minmax(560px, 1.62fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 24px;
   align-items: start;
-  max-width: 1400px;
+  max-width: 980px;
   margin: 0 auto;
   padding: 24px;
 }
 
 .play-layout__left {
-  position: sticky;
-  top: 96px;
+  position: static;
   display: grid;
   gap: 16px;
 }
@@ -548,7 +547,39 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
-  padding: 0 10px 10px;
+  padding: 0;
+}
+
+.classic-selection-stage {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  margin: 0 10px 10px;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.classic-selection-art {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.classic-selection-art img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.classic-assignment-grid,
+.classic-assignment-total {
+  position: relative;
+  z-index: 1;
 }
 
 .classic-assignment-slot {
@@ -579,13 +610,58 @@ button {
   opacity: 1;
 }
 
-.classic-assignment-slot strong {
+.classic-assignment-slot strong,
+.classic-assignment-card > strong,
+.classic-assignment-total strong {
   font-family: var(--font-condensed);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   line-height: 1;
   text-transform: uppercase;
+}
+
+.classic-assignment-card {
+  min-width: 0;
+  border: 1px solid var(--line-strong);
+  background: rgba(255, 250, 240, 0.92);
+  padding: 14px;
+}
+
+.classic-assignment-card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.classic-assignment-card > strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.08rem;
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  text-transform: none;
+}
+
+.classic-assignment-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--brand-ink);
+  background: #fffaf0;
+  padding: 12px 14px;
+}
+
+.classic-assignment-total strong {
+  color: var(--brand-deep);
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+}
+
+.classic-assignment-total strong.negative {
+  color: var(--brand-flag);
 }
 
 .classic-spin-action {
@@ -2346,11 +2422,30 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .classic-selection-art {
+    opacity: 0.24;
+  }
+
+  .classic-selection-art img {
+    width: 130%;
+    height: 130%;
+    transform: rotate(90deg);
+  }
+
+  .classic-assignment-grid {
+    grid-template-columns: 1fr;
+  }
+
   .reel--player strong {
     min-height: auto;
     /* Sized so even the longest names stay on a single line rather than
-       wrapping to two lines on some players and one on others. */
+       wrapping to two lines on some players and one on others. The extra
+       descender room keeps letters like g/j/q from clipping on mobile without
+       making the reel box taller. */
     font-size: clamp(1.1rem, 5.2vw, 2rem);
+    line-height: 1;
+    padding-bottom: 0.16em;
+    margin-bottom: -0.16em;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
