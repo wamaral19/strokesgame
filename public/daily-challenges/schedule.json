@@ -90,5 +90,48 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-10",
+    "date": "2026-07-10",
+    "title": "Daily Challenge",
+    "items": [
+      {
+        "id": "2026-07-10-clue-1-tommy-fleetwood",
+        "playerId": "tommy_fleetwood",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "A guy who refuses to win. The most unclutch player. Great in Europe though."
+        }
+      },
+      {
+        "id": "2026-07-10-clue-2-patrick-reed",
+        "playerId": "patrick_reed",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "He's not known for being skinny and won the Masters."
+        }
+      },
+      {
+        "id": "2026-07-10-clue-3-john-daly",
+        "playerId": "john_daly",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "An Arnold Palmer with Good Boy Vodka."
+        }
+      },
+      {
+        "id": "2026-07-10-clue-4-brad-faxon",
+        "playerId": "brad_faxon",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "Tells Rory \"be an athlete\" all the time."
+        }
+      }
+    ]
   }
 ]

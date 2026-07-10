@@ -604,6 +604,7 @@ function ZoneSlot({
   onMulligan,
   disabled,
   readOnly,
+  concealStats,
 }: {
   category: CategoryKey;
   assignment?: SlotAssignment;
@@ -611,12 +612,14 @@ function ZoneSlot({
   onMulligan: (category: CategoryKey) => void;
   disabled: boolean;
   readOnly?: boolean;
+  concealStats?: boolean;
 }) {
   const zone = ZONE_META[category];
   const canAssign = !assignment && !disabled && !readOnly;
 
   if (assignment) {
     const selectedValue = assignment.season.sg[category];
+    const shownValue = concealStats ? "--" : formatSg(selectedValue);
     return (
       <div
         className={`course-zone ${zone.className} course-zone--filled`}
@@ -638,7 +641,7 @@ function ZoneSlot({
           <strong>{assignment.season.player}</strong>
           <span className="course-zone__meta">
             <span>{assignment.season.year}</span>
-            <em className={selectedValue < 0 ? "negative" : ""}>{formatSg(selectedValue)}</em>
+            <em className={!concealStats && selectedValue < 0 ? "negative" : ""}>{shownValue}</em>
           </span>
         </span>
       </div>
@@ -697,6 +700,7 @@ function CourseBoard({
   mulligans,
   readOnly,
   totalSg,
+  concealedSeasonId,
 }: {
   assignmentByCategory: Map<CategoryKey, SlotAssignment>;
   onAssign: (category: CategoryKey) => void;
@@ -705,6 +709,7 @@ function CourseBoard({
   mulligans: number;
   readOnly?: boolean;
   totalSg: number;
+  concealedSeasonId?: string;
 }) {
   return (
     <section className="course-board" aria-label="Golf category board">
@@ -721,6 +726,7 @@ function CourseBoard({
             onMulligan={onMulligan}
             disabled={disabled}
             readOnly={readOnly}
+            concealStats={assignmentByCategory.get(category)?.season.id === concealedSeasonId}
           />
         ))}
       </div>
@@ -2089,6 +2095,13 @@ export function StrokesGainedGame() {
     return assignments.find((assignment) => assignment.season.id === currentSeason.id)?.category;
   }, [assignments, currentSeason, needsSpin]);
 
+  const concealedSeasonId = statsMode === "blind" && needsSpin ? currentSeason?.id : undefined;
+  const revealedAssignments = useMemo(() => {
+    if (!concealedSeasonId) return assignments;
+    return assignments.filter((assignment) => assignment.season.id !== concealedSeasonId);
+  }, [assignments, concealedSeasonId]);
+  const revealedTotalSg = totalSelectedSg(revealedAssignments);
+
   const clearSpinTimers = useCallback(() => {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
@@ -2375,7 +2388,7 @@ export function StrokesGainedGame() {
             </div>
             <div>
               <span className="eyebrow">Total SG</span>
-              <strong>{formatSg(totalSg)}</strong>
+              <strong>{formatSg(revealedTotalSg)}</strong>
             </div>
           </div>
           <button className={complete ? "primary-button" : "ghost-button"} type="button" onClick={resetGame}>
@@ -2390,11 +2403,12 @@ export function StrokesGainedGame() {
           disabled={phase !== "ready" || complete}
           mulligans={mulligans}
           readOnly
-          totalSg={totalSg}
+          totalSg={revealedTotalSg}
+          concealedSeasonId={concealedSeasonId}
         />
       </section>
 
-      {simulation ? null : <AssignmentStats assignments={assignments} />}
+      {simulation ? null : <AssignmentStats assignments={revealedAssignments} />}
 
       {simulation ? (
         <>
