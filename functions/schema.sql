@@ -32,3 +32,27 @@ CREATE TABLE IF NOT EXISTS daily_completions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_completions_date ON daily_completions (challenge_date);
+
+-- Classic mode has no "correct categories" score; its distinguishing dimension
+-- is the mode config the player chose (stats/time-frame/field). It shares the
+-- same simulated outputs as the daily (SG profile, wins, earnings) plus the
+-- FedEx finish.
+CREATE TABLE IF NOT EXISTS classic_completions (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  sg_off_tee      REAL    NOT NULL DEFAULT 0,
+  sg_approach     REAL    NOT NULL DEFAULT 0,
+  sg_around_green REAL    NOT NULL DEFAULT 0,
+  sg_putting      REAL    NOT NULL DEFAULT 0,
+  total_sg        REAL    NOT NULL DEFAULT 0,
+  wins            INTEGER NOT NULL DEFAULT 0,
+  earnings        INTEGER NOT NULL DEFAULT 0,
+  fedex_rank      INTEGER,                     -- final FedEx Cup rank (1 = champion)
+  status_tier     TEXT,                        -- outcome tier label from the sim
+  stats_mode      TEXT,                        -- "show" | "blind"
+  year_mode       TEXT,                        -- "current" | "all" | "filter"
+  field_mode      TEXT,                        -- "entire" | "notables"
+  years           TEXT,                        -- comma-joined seasons when year_mode = "filter"
+  created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_classic_completions_created ON classic_completions (created_at);

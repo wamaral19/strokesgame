@@ -77,6 +77,17 @@ type StatsMode = "blind" | "show";
 type FieldMode = "entire" | "notables";
 type GameVariant = "classic" | "daily";
 
+// Fire-and-forget completion telemetry. Failures are swallowed so logging never
+// blocks or interrupts gameplay; `keepalive` lets it survive a page unload.
+function logCompletion(payload: Record<string, unknown>) {
+  void fetch("/api/log-completion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 const STATS_MODE_LABEL: Record<StatsMode, string> = {
   blind: "Blind",
   show: "Show Stats",
@@ -2040,9 +2051,9 @@ export function StrokesGainedGame({
   const [yearMode, setYearMode] = useState<YearMode>("current");
   const [selectedYears, setSelectedYears] = useState<number[]>([LATEST_YEAR]);
   const timers = useRef<number[]>([]);
-  // Keyed by `${date}:${runId}` so each finished daily run is logged exactly
-  // once, while a fresh run (new runId) is allowed to log again.
-  const loggedRef = useRef<string | null>(null);
+  // Set of run keys already sent to the completion logger, so each finished run
+  // is logged exactly once. A fresh run produces a new key and logs again.
+  const loggedRef = useRef<Set<string>>(new Set());
   const dailyChallenge = useMemo(() => getDailyChallenge(dailyDateKey), [dailyDateKey]);
 
   const eligibleSeasons = useMemo(() => {
@@ -2084,29 +2095,23 @@ export function StrokesGainedGame({
   useEffect(() => {
     if (gameVariant !== "daily") return;
     if (!dailySimulation || dailyIdealMatches === undefined) return;
-    const key = `${dailyChallenge.date}:${dailyRunId}`;
-    if (loggedRef.current === key) return;
-    loggedRef.current = key;
+    const key = `daily:${dailyChallenge.date}:${dailyRunId}`;
+    if (loggedRef.current.has(key)) return;
+    loggedRef.current.add(key);
 
     const wins =
       dailySimulation.results.filter((result) => result.position === 1).length +
       dailySimulation.playoffStages.filter((stage) => stage.position === 1).length;
 
-    const payload = {
+    logCompletion({
+      mode: "daily",
       date: dailyChallenge.date,
       correctCategories: dailyIdealMatches,
       rating: dailyRating(dailyIdealMatches),
       sg: categorySgFromAssignments(dailyAssignments),
       wins,
       earnings: Math.round(dailySimulation.earnings),
-    };
-
-    void fetch("/api/log-completion", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-      keepalive: true,
-    }).catch(() => {});
+    });
   }, [
     gameVariant,
     dailySimulation,
@@ -2114,6 +2119,44 @@ export function StrokesGainedGame({
     dailyAssignments,
     dailyChallenge.date,
     dailyRunId,
+  ]);
+
+  // Classic completion telemetry: once a Classic run resolves into a finished
+  // season, log the SG profile, wins, earnings, FedEx finish, and the mode
+  // config that was played. Keyed by the assignment seed so re-renders don't
+  // duplicate and each distinct build logs once.
+  useEffect(() => {
+    if (gameVariant !== "classic") return;
+    if (!simulation) return;
+    const key = `classic:${buildSeed(assignments)}`;
+    if (loggedRef.current.has(key)) return;
+    loggedRef.current.add(key);
+
+    const wins =
+      simulation.results.filter((result) => result.position === 1).length +
+      simulation.playoffStages.filter((stage) => stage.position === 1).length;
+
+    logCompletion({
+      mode: "classic",
+      sg: categorySgFromAssignments(assignments),
+      totalSg: simulation.totalSg,
+      wins,
+      earnings: Math.round(simulation.earnings),
+      fedexRank: simulation.fedExRank,
+      statusTier: simulation.status.tier,
+      statsMode,
+      yearMode,
+      fieldMode,
+      years: yearMode === "filter" ? selectedYears : [],
+    });
+  }, [
+    gameVariant,
+    simulation,
+    assignments,
+    statsMode,
+    yearMode,
+    fieldMode,
+    selectedYears,
   ]);
 
   const assignmentByCategory = useMemo(() => {
