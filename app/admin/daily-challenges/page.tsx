@@ -30,6 +30,15 @@ function fileNameFor(file: File) {
   return `${slug(file.name)}${extension ? `.${extension.toLowerCase()}` : ""}`;
 }
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).split(",")[1] ?? "");
+    reader.onerror = () => reject(reader.error ?? new Error("Could not read file"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function todayInputValue() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -105,6 +114,11 @@ export default function DailyChallengeAdminPage() {
   }, []);
 
   const [keyInput, setKeyInput] = useState("");
+  const [adminKey, setAdminKey] = useState(() => {
+    if (typeof window === "undefined") return "";
+    return window.localStorage.getItem("strokes-daily-admin-key") ?? "";
+  });
+  const [publishing, setPublishing] = useState(false);
   const [unlocked, setUnlocked] = useState(() => {
     if (typeof window === "undefined") return false;
     return window.localStorage.getItem("strokes-daily-admin-unlocked") === "true";
@@ -129,8 +143,41 @@ export default function DailyChallengeAdminPage() {
       return;
     }
     window.localStorage.setItem("strokes-daily-admin-unlocked", "true");
+    window.localStorage.setItem("strokes-daily-admin-key", keyInput);
+    setAdminKey(keyInput);
     setUnlocked(true);
     setMessage("");
+  };
+
+  const publishToSite = async () => {
+    if (publishing) return;
+    setPublishing(true);
+    setMessage("Publishing to site…");
+    try {
+      const images: { path: string; base64: string }[] = [];
+      for (const item of items) {
+        if (!item.file) continue;
+        images.push({
+          path: `public/daily-challenges/${date}/${fileNameFor(item.file)}`,
+          base64: await fileToBase64(item.file),
+        });
+      }
+
+      const response = await fetch("/api/daily-challenge", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-key": adminKey },
+        body: JSON.stringify({ challenge, images }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Request failed (${response.status})`);
+      }
+      setMessage(`Published ${challenge.date}. The site will rebuild and go live in ~1–3 min.`);
+    } catch (error) {
+      setMessage(`Publish failed: ${error instanceof Error ? error.message : String(error)}`);
+    } finally {
+      setPublishing(false);
+    }
   };
 
   const copyJson = async () => {
@@ -217,8 +264,16 @@ export default function DailyChallengeAdminPage() {
             <button type="button" className="ghost-button" onClick={downloadJson}>
               Download JSON
             </button>
-            <button type="button" className="primary-button" onClick={saveToFolder}>
+            <button type="button" className="ghost-button" onClick={saveToFolder}>
               Save To Folder
+            </button>
+            <button
+              type="button"
+              className="primary-button"
+              onClick={publishToSite}
+              disabled={publishing}
+            >
+              {publishing ? "Publishing…" : "Publish To Site"}
             </button>
           </div>
         </div>
