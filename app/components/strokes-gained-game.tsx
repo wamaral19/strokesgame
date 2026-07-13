@@ -844,7 +844,7 @@ function PlayoffStageBlock({
           <div className={`playoff-writeup ${stage.advanced ? "is-advance" : "is-out"}`}>
             <span className="eyebrow">{stage.writeup.label}</span>
             <h4>{stage.writeup.headline}</h4>
-            <p>{stage.writeup.detail}</p>
+            {stage.writeup.detail ? <p>{stage.writeup.detail}</p> : null}
             {stage.sgNote ? <p className="playoff-writeup__note">{stage.sgNote}</p> : null}
           </div>
         </div>

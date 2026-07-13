@@ -191,11 +191,6 @@ export const MAJOR_STRONG = [
 // Playoffs — stage outcomes
 // ---------------------------------------------------------------------------
 
-export const PO_ADVANCED_BMW = [
-  "You made it through the first checkpoint. The field is smaller, the points are louder, and every loose swing gets more expensive.",
-  "Round one is handled. Now the season gets sharper, and so does the math.",
-] as const;
-
 export const PO_ADVANCED_TC = [
   "You are going to East Lake. That means the season is officially more than solid. Now it is a chance at the whole thing.",
   "Top 30 gets you into the room where the FedEx Cup is decided. You earned the invite. Now earn the noise.",

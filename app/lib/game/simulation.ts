@@ -1,7 +1,6 @@
 import { CATEGORY_ORDER } from "./categories";
 import {
   CATEGORY_PHRASE,
-  PO_ADVANCED_BMW,
   PO_ADVANCED_TC,
   PO_ELIM_BEFORE_TC,
   PO_ELIM_FIRST,
@@ -1156,7 +1155,7 @@ function playoffStageWriteup(
       return { label: eventName, headline: "You won the St. Jude.", detail: pick(PO_WON_FIRST, seed) };
     }
     if (advanced) {
-      return { label: eventName, headline: "On to the BMW.", detail: pick(PO_ADVANCED_BMW, seed) };
+      return { label: eventName, headline: "On to the BMW.", detail: "" };
     }
     return {
       label: eventName,
