@@ -2077,6 +2077,45 @@ export function StrokesGainedGame({
     );
   }, [dailyAssignments, dailyComplete]);
 
+  // Fire-and-forget completion telemetry: once a daily run resolves into a
+  // finished season, POST the result (correct categories, SG profile, wins,
+  // season earnings) to the D1-backed logging endpoint. Failures are swallowed
+  // so logging never blocks or interrupts gameplay.
+  useEffect(() => {
+    if (gameVariant !== "daily") return;
+    if (!dailySimulation || dailyIdealMatches === undefined) return;
+    const key = `${dailyChallenge.date}:${dailyRunId}`;
+    if (loggedRef.current === key) return;
+    loggedRef.current = key;
+
+    const wins =
+      dailySimulation.results.filter((result) => result.position === 1).length +
+      dailySimulation.playoffStages.filter((stage) => stage.position === 1).length;
+
+    const payload = {
+      date: dailyChallenge.date,
+      correctCategories: dailyIdealMatches,
+      rating: dailyRating(dailyIdealMatches),
+      sg: categorySgFromAssignments(dailyAssignments),
+      wins,
+      earnings: Math.round(dailySimulation.earnings),
+    };
+
+    void fetch("/api/log-completion", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => {});
+  }, [
+    gameVariant,
+    dailySimulation,
+    dailyIdealMatches,
+    dailyAssignments,
+    dailyChallenge.date,
+    dailyRunId,
+  ]);
+
   const assignmentByCategory = useMemo(() => {
     return new Map(assignments.map((assignment) => [assignment.category, assignment]));
   }, [assignments]);
@@ -2276,22 +2315,9 @@ export function StrokesGainedGame({
   const returnToGameModeSelection = () => {
     clearSpinTimers();
     setResetConfirmOpen(false);
-    setGameModeChosen(false);
-    setGameVariant("classic");
-    setStatsMode("show");
-    setFieldMode("entire");
-    setAssignments([]);
-    setDailyAssignments([]);
-    setDailyIdealMatches(undefined);
-    setDailyRunId((value) => value + 1);
-    setCurrentSeason(undefined);
-    setDisplayPlayer("...");
-    setDisplayYear("...");
-    setPhase("player");
-    setMulligans(0);
-    setNeedsSpin(false);
-    setYearMode("current");
-    setSelectedYears([LATEST_YEAR]);
+    // The root chooser lives at its own URL now, so returning to mode selection
+    // navigates there and lets a fresh mount reset all in-game state.
+    router.push("/");
   };
 
   return (
@@ -2303,7 +2329,15 @@ export function StrokesGainedGame({
           fieldMode={fieldMode}
           selectedYears={selectedYears}
           isChange={assignments.length > 0 || mulligans > 0}
+          initialShowClassicOptions={initialVariant === "classic"}
+          classicNavigates={isRootChooser}
           onGameVariant={(mode) => {
+            // The root chooser deep-links into a dedicated URL per mode; a
+            // chooser hosted on a mode page just tracks the selected variant.
+            if (isRootChooser) {
+              router.push(mode === "daily" ? "/daily" : "/classic");
+              return;
+            }
             setGameVariant(mode);
             if (mode === "daily") {
               clearSpinTimers();
@@ -2339,8 +2373,8 @@ export function StrokesGainedGame({
             challenge={dailyChallenge}
             onComplete={handleDailyComplete}
             onRestart={() => {
-              resetDaily();
-              setGameModeChosen(false);
+              clearSpinTimers();
+              router.push("/");
             }}
           />
           {dailySimulation ? (
@@ -2363,7 +2397,7 @@ export function StrokesGainedGame({
           <button
             type="button"
             className="ghost-button mode-change-button"
-            onClick={() => setGameModeChosen(false)}
+            onClick={() => router.push("/")}
           >
             Change Game Mode
           </button>
