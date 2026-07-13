@@ -614,14 +614,19 @@ function SpinnerPanel({
                 <div className="classic-assignment-card" key={category}>
                   <div className="classic-assignment-card__head">
                     <span className="eyebrow">{ZONE_META[category].label}</span>
-                    <button
-                      type="button"
-                      className="mulligan-button"
-                      onClick={() => onMulligan(category)}
-                      aria-label={`Mulligan ${ZONE_META[category].label} — drop ${assignment.season.player} and respin`}
-                    >
-                      Mulligan
-                    </button>
+                    {/* Mulligans are only available while the lineup is still
+                        being built. Once all four slots are filled the lineup
+                        freezes, so a completed season is logged exactly once. */}
+                    {complete ? null : (
+                      <button
+                        type="button"
+                        className="mulligan-button"
+                        onClick={() => onMulligan(category)}
+                        aria-label={`Mulligan ${ZONE_META[category].label} — drop ${assignment.season.player} and respin`}
+                      >
+                        Mulligan
+                      </button>
+                    )}
                   </div>
                   <strong>
                     {assignment.season.player} {assignment.season.year}
@@ -2338,6 +2343,9 @@ export function StrokesGainedGame({
   };
 
   const handleMulligan = (category: CategoryKey) => {
+    // Once the lineup is full it freezes — no more mulligans, so re-completing a
+    // finished season can't spam duplicate completion logs.
+    if (complete) return;
     const remaining = assignments.filter((assignment) => assignment.category !== category);
     if (remaining.length === assignments.length) return;
 
