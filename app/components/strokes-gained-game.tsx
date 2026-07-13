@@ -157,15 +157,14 @@ function HowToPlayDialog({ onClose }: { onClose: () => void }) {
         <h2 id="how-to-play-title">Build the perfect golfer from the best pieces of real players.</h2>
         <div className="how-to-play__copy">
           <p>
-            Different players excel at different parts of the game. Even in one of Tiger&apos;s
-            legendary seasons, another player could still be better with the putter. Your job is to
-            take the right piece of each player&apos;s game and construct a golfer who can put
-            together a legendary season.
-          </p>
-          <p>
             Strokes Gained measures how many shots a player gains or loses against the field in a
             specific area: off the tee (OTT), approach (APP), around the green (ARG), and putting
             (PUTT). Higher is better.
+          </p>
+          <p>
+            Scottie Scheffler had a dominant 2025, but if one player had Rory&apos;s driver,
+            Viktor&apos;s irons, Sungjae&apos;s chipping, and Sam Burns&apos; putting they would have
+            had an even better year. Build the player to beat Scottie and the rest of the field.
           </p>
         </div>
         <button type="button" className="primary-button" onClick={onClose}>
