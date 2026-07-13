@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
 import { formatCurrency, formatSg, positionLabel } from "../lib/format";
 import { CATEGORY_META, CATEGORY_ORDER } from "../lib/game/categories";
+import { closestFedExComp } from "../lib/game/fedex-comp";
 import {
   dailyRating,
   easternDateKey,
@@ -757,9 +758,16 @@ function SpinningStat({
       <span className="eyebrow">{meta.shortLabel}</span>
       <strong className="playoff-stat__value">{formatSg(display)}</strong>
       <span className="playoff-stat__meta">
-        {settled
-          ? `avg ${formatSg(breakdown.mean)} · ${breakdown.above ? "+" : ""}${breakdown.delta.toFixed(2)}`
-          : "spinning…"}
+        {settled ? (
+          <>
+            {`avg ${formatSg(breakdown.mean)} · `}
+            <span className={breakdown.above ? "playoff-stat__delta--up" : "playoff-stat__delta--down"}>
+              {`${breakdown.above ? "+" : ""}${breakdown.delta.toFixed(2)}`}
+            </span>
+          </>
+        ) : (
+          "spinning…"
+        )}
       </span>
     </div>
   );
@@ -841,12 +849,6 @@ function PlayoffStageBlock({
               <strong>{formatCurrency(stage.earnings)}</strong>
             </div>
           </div>
-          <div className={`playoff-writeup ${stage.advanced ? "is-advance" : "is-out"}`}>
-            <span className="eyebrow">{stage.writeup.label}</span>
-            <h4>{stage.writeup.headline}</h4>
-            {stage.writeup.detail ? <p>{stage.writeup.detail}</p> : null}
-            {stage.sgNote ? <p className="playoff-writeup__note">{stage.sgNote}</p> : null}
-          </div>
         </div>
       ) : null}
 
@@ -871,6 +873,9 @@ function RegularSeasonBlock({
   isCurrent: boolean;
   onContinue: () => void;
 }) {
+  // The 2025 FedEx Cup regular-season player whose points land closest to this
+  // run — a real-world comp instead of a text write-up.
+  const comp = closestFedExComp(summary.points);
   return (
     <section className="playoff-block playoff-block--regular" aria-label="Regular season">
       <div className="playoff-block__head">
@@ -879,25 +884,31 @@ function RegularSeasonBlock({
       </div>
       <div className="playoff-summary__grid">
         <div>
-          <span className="eyebrow">FedEx Cup Points</span>
-          <strong>{summary.points.toLocaleString()}</strong>
+          <span className="eyebrow">Wins</span>
+          <strong>{summary.wins}</strong>
         </div>
         <div>
           <span className="eyebrow">Regular-Season Rank</span>
           <strong>No. {summary.rank}</strong>
         </div>
         <div>
-          <span className="eyebrow">Wins</span>
-          <strong>{summary.wins}</strong>
-        </div>
-        <div>
           <span className="eyebrow">Earned</span>
           <strong>{formatCurrency(summary.earnings)}</strong>
         </div>
+        <div>
+          <span className="eyebrow">FedEx Cup Points</span>
+          <strong>{summary.points.toLocaleString()}</strong>
+        </div>
       </div>
-      <div className={`playoff-writeup ${summary.madePlayoffs ? "is-advance" : "is-out"}`}>
-        <p>{summary.writeup.detail}</p>
-      </div>
+      {comp ? (
+        <div className="player-comp" aria-label="Player comp">
+          <span className="eyebrow">Player Comp</span>
+          <strong>{comp.player}</strong>
+          <span className="player-comp__meta">
+            {comp.points.toLocaleString()} pts · No. {comp.rank} in 2025
+          </span>
+        </div>
+      ) : null}
       {isCurrent ? (
         <NextStepDialog
           eyebrow={summary.writeup.label}
@@ -1190,7 +1201,12 @@ function TournamentLog({
         aria-expanded={eventsOpen}
       >
         <span>Season Results</span>
-        <span>{eventsOpen ? "Hide" : "Show"}</span>
+        <span className="event-accordion__toggle">
+          {eventsOpen ? "Collapse" : "Tap to expand"}
+          <span className="event-accordion__chevron" aria-hidden="true">
+            {eventsOpen ? "▲" : "▼"}
+          </span>
+        </span>
       </button>
 
       {eventsOpen ? (

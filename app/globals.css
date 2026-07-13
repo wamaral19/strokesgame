@@ -2227,6 +2227,29 @@ button {
   background: rgba(88, 145, 74, 0.08);
 }
 
+/* A pill-shaped affordance so it reads clearly as an expandable control rather
+   than a plain label. */
+.event-accordion__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--brand-primary);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: var(--brand-deep);
+  background: rgba(88, 145, 74, 0.1);
+  font-size: 0.74rem;
+}
+
+.event-accordion__trigger:hover .event-accordion__toggle {
+  background: rgba(88, 145, 74, 0.18);
+}
+
+.event-accordion__chevron {
+  font-size: 0.6rem;
+  line-height: 1;
+}
+
 .event-table {
   width: 100%;
   border-collapse: collapse;
@@ -2936,6 +2959,16 @@ button {
   color: var(--brand-flag);
 }
 
+/* The difference-from-average figure is coloured by variance direction: green
+   when the week beat the player's season mean, red when it fell short. */
+.playoff-stat__delta--up {
+  color: var(--brand-deep);
+}
+
+.playoff-stat__delta--down {
+  color: var(--brand-flag);
+}
+
 /* Stage summary + writeup */
 .playoff-summary {
   margin-top: 20px;
@@ -3006,6 +3039,38 @@ button {
   font-style: italic;
   color: rgba(26, 26, 26, 0.52);
   font-size: 0.94rem;
+}
+
+/* Player Comp — the real-world 2025 player closest on FedEx Cup points, shown
+   under the regular-season box in place of a text write-up. */
+.player-comp {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 18px;
+  border: 1px solid var(--brand-primary);
+  border-radius: 10px;
+  background: rgba(88, 145, 74, 0.08);
+  padding: 14px 16px;
+}
+
+.player-comp .eyebrow {
+  color: var(--brand-deep);
+}
+
+.player-comp strong {
+  font-size: clamp(1.4rem, 2.8vw, 2rem);
+  font-weight: 680;
+  line-height: 1;
+}
+
+.player-comp__meta {
+  font-family: var(--font-condensed);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.55);
 }
 
 .playoff-summary .primary-button,
