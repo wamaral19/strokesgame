@@ -133,5 +133,48 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-13",
+    "date": "2026-07-13",
+    "title": "Daily Challenge - First Team All Rager",
+    "items": [
+      {
+        "id": "2026-07-13-clue-1-sergio-garcia",
+        "playerId": "sergio_garcia",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "2025 Masters. 2017 Open Championship tee marker."
+        }
+      },
+      {
+        "id": "2026-07-13-clue-2-erik-van-rooyen",
+        "playerId": "erik_van_rooyen",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "WGC Mexico Tee Marker."
+        }
+      },
+      {
+        "id": "2026-07-13-clue-3-matt-every",
+        "playerId": "matt_every",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "Torrey Pines ravine. LFG."
+        }
+      },
+      {
+        "id": "2026-07-13-clue-4-rory-mcilroy",
+        "playerId": "rory_mcilroy",
+        "media": {
+          "kind": "text",
+          "title": "Untitled clue",
+          "body": "2015 Doral into the lake."
+        }
+      }
+    ]
   }
 ]
