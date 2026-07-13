@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
 import { formatCurrency, formatSg, positionLabel } from "../lib/format";
@@ -320,6 +321,8 @@ function GameModeChooser({
   onFieldMode,
   onToggleYear,
   onConfirm,
+  initialShowClassicOptions = false,
+  classicNavigates = false,
 }: {
   statsMode: StatsMode;
   yearMode: YearMode;
@@ -332,9 +335,15 @@ function GameModeChooser({
   onFieldMode: (mode: FieldMode) => void;
   onToggleYear: (year: number) => void;
   onConfirm: () => void;
+  // Start the chooser already on the Classic options step (used by /classic).
+  initialShowClassicOptions?: boolean;
+  // When true, picking Classic hands off to the parent (which navigates to
+  // /classic) instead of revealing the options step inline (used by the root
+  // chooser at /).
+  classicNavigates?: boolean;
 }) {
   const confirmRef = useRef<HTMLButtonElement | null>(null);
-  const [showClassicOptions, setShowClassicOptions] = useState(false);
+  const [showClassicOptions, setShowClassicOptions] = useState(initialShowClassicOptions);
   const canConfirm = yearMode !== "filter" || selectedYears.length > 0;
 
   useEffect(() => {
@@ -352,13 +361,15 @@ function GameModeChooser({
   }, [showClassicOptions]);
 
   const chooseDaily = () => {
+    // On the root chooser the parent navigates to /daily; when this chooser is
+    // hosted on a mode page it starts the round inline.
     onGameVariant("daily");
-    onConfirm();
+    if (!classicNavigates) onConfirm();
   };
 
   const chooseClassic = () => {
     onGameVariant("classic");
-    setShowClassicOptions(true);
+    if (!classicNavigates) setShowClassicOptions(true);
   };
 
   return (
@@ -1999,9 +2010,18 @@ function DailyChallengeGame({
   );
 }
 
-export function StrokesGainedGame() {
-  const [gameModeChosen, setGameModeChosen] = useState(false);
-  const [gameVariant, setGameVariant] = useState<GameVariant>("classic");
+export function StrokesGainedGame({
+  initialVariant,
+}: {
+  // When set, the page deep-links straight into a mode instead of showing the
+  // root chooser: "daily" skips the chooser entirely; "classic" opens the
+  // chooser already on the Classic options step. Left undefined at "/".
+  initialVariant?: GameVariant;
+} = {}) {
+  const router = useRouter();
+  const isRootChooser = initialVariant === undefined;
+  const [gameModeChosen, setGameModeChosen] = useState(initialVariant === "daily");
+  const [gameVariant, setGameVariant] = useState<GameVariant>(initialVariant ?? "classic");
   const [dailyDateKey, setDailyDateKey] = useState(() => easternDateKey());
   const [statsMode, setStatsMode] = useState<StatsMode>("show");
   const [fieldMode, setFieldMode] = useState<FieldMode>("entire");
@@ -2010,7 +2030,7 @@ export function StrokesGainedGame() {
   const [dailyIdealMatches, setDailyIdealMatches] = useState<number | undefined>();
   const [dailyRunId, setDailyRunId] = useState(0);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const [howToPlayOpen, setHowToPlayOpen] = useState(false);
+  const [howToPlayOpen, setHowToPlayOpen] = useState(initialVariant === "daily");
   const [currentSeason, setCurrentSeason] = useState<PlayerSeason | undefined>();
   const [displayPlayer, setDisplayPlayer] = useState("...");
   const [displayYear, setDisplayYear] = useState("...");
@@ -2020,6 +2040,9 @@ export function StrokesGainedGame() {
   const [yearMode, setYearMode] = useState<YearMode>("current");
   const [selectedYears, setSelectedYears] = useState<number[]>([LATEST_YEAR]);
   const timers = useRef<number[]>([]);
+  // Keyed by `${date}:${runId}` so each finished daily run is logged exactly
+  // once, while a fresh run (new runId) is allowed to log again.
+  const loggedRef = useRef<string | null>(null);
   const dailyChallenge = useMemo(() => getDailyChallenge(dailyDateKey), [dailyDateKey]);
 
   const eligibleSeasons = useMemo(() => {
@@ -2239,6 +2262,17 @@ export function StrokesGainedGame() {
     setDailyRunId((value) => value + 1);
   };
 
+  // Stable identity so the daily reveal-rail spin effect (which lists onComplete
+  // in its deps) doesn't tear down and re-run when this fires. An inline arrow
+  // here re-ran the spin — and the season playback — a second time.
+  const handleDailyComplete = useCallback(
+    (nextAssignments: SlotAssignment[], idealMatches: number) => {
+      setDailyAssignments(nextAssignments);
+      setDailyIdealMatches(idealMatches);
+    },
+    [],
+  );
+
   const returnToGameModeSelection = () => {
     clearSpinTimers();
     setResetConfirmOpen(false);
@@ -2303,10 +2337,7 @@ export function StrokesGainedGame() {
           <DailyChallengeGame
             key={`${dailyChallenge.id}-${dailyRunId}`}
             challenge={dailyChallenge}
-            onComplete={(nextAssignments, idealMatches) => {
-              setDailyAssignments(nextAssignments);
-              setDailyIdealMatches(idealMatches);
-            }}
+            onComplete={handleDailyComplete}
             onRestart={() => {
               resetDaily();
               setGameModeChosen(false);
