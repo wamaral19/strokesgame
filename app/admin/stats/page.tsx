@@ -36,6 +36,7 @@ type ClassicData = {
   totals: {
     total: number;
     avgWins: number | null;
+    avgMulligans: number | null;
     avgEarnings: number | null;
     avgTotalSg: number | null;
     champions: number;
@@ -55,6 +56,7 @@ type ClassicData = {
     putting: number;
     totalSg: number;
     wins: number;
+    mulligans: number;
     earnings: number;
     fedexRank: number | null;
     statusTier: string | null;
@@ -337,6 +339,7 @@ function ClassicView({ data }: { data: ClassicData }) {
         <Stat label="Completions" value={totals.total} />
         <Stat label="FedEx Cup wins (rank 1)" value={totals.champions} />
         <Stat label="Avg wins" value={num(totals.avgWins)} />
+        <Stat label="Avg mulligans" value={num(totals.avgMulligans)} />
         <Stat label="Avg total SG" value={num(totals.avgTotalSg)} />
         <Stat
           label="Avg earnings"
@@ -386,6 +389,7 @@ function ClassicView({ data }: { data: ClassicData }) {
               <th style={cell}>Putting</th>
               <th style={cell}>Total SG</th>
               <th style={cell}>Wins</th>
+              <th style={cell}>Mulls</th>
               <th style={cell}>Earnings</th>
               <th style={cell}>Mode</th>
             </tr>
@@ -402,6 +406,7 @@ function ClassicView({ data }: { data: ClassicData }) {
                 <td style={cell}>{formatSg(row.putting)}</td>
                 <td style={cell}>{formatSg(row.totalSg)}</td>
                 <td style={cell}>{row.wins}</td>
+                <td style={cell}>{row.mulligans}</td>
                 <td style={cell}>{formatCurrency(row.earnings)}</td>
                 <td style={cell}>
                   {label(STATS_LABEL, row.statsMode)} · {label(YEAR_LABEL, row.yearMode)}
@@ -412,7 +417,7 @@ function ClassicView({ data }: { data: ClassicData }) {
             ))}
             {data.rows.length === 0 ? (
               <tr>
-                <td colSpan={11} style={{ padding: "12px 8px", opacity: 0.7 }}>
+                <td colSpan={12} style={{ padding: "12px 8px", opacity: 0.7 }}>
                   No completions logged yet.
                 </td>
               </tr>

@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS classic_completions (
   sg_putting      REAL    NOT NULL DEFAULT 0,
   total_sg        REAL    NOT NULL DEFAULT 0,
   wins            INTEGER NOT NULL DEFAULT 0,
+  mulligans       INTEGER NOT NULL DEFAULT 0,  -- re-spins used across the build
   earnings        INTEGER NOT NULL DEFAULT 0,
   fedex_rank      INTEGER,                     -- final FedEx Cup rank (1 = champion)
   status_tier     TEXT,                        -- outcome tier label from the sim

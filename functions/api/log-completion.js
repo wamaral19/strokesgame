@@ -54,9 +54,9 @@ export async function onRequestPost(context) {
       await env.DB.prepare(
         `INSERT INTO classic_completions
            (sg_off_tee, sg_approach, sg_around_green, sg_putting, total_sg,
-            wins, earnings, fedex_rank, status_tier,
+            wins, mulligans, earnings, fedex_rank, status_tier,
             stats_mode, year_mode, field_mode, years)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
         .bind(
           finiteNumber(sg.offTee),
@@ -65,6 +65,7 @@ export async function onRequestPost(context) {
           finiteNumber(sg.putting),
           finiteNumber(payload?.totalSg),
           wins,
+          clampInt(payload?.mulligans, 0, 999),
           earnings,
           Number.isFinite(payload?.fedexRank) ? Math.round(payload.fedexRank) : null,
           typeof payload?.statusTier === "string" ? payload.statusTier.slice(0, 48) : null,

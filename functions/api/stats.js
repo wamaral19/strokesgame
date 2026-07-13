@@ -92,6 +92,7 @@ async function classicStats(env, url) {
     `SELECT
        COUNT(*)                                       AS total,
        AVG(wins)                                      AS avgWins,
+       AVG(mulligans)                                 AS avgMulligans,
        AVG(earnings)                                  AS avgEarnings,
        AVG(total_sg)                                  AS avgTotalSg,
        SUM(CASE WHEN fedex_rank = 1 THEN 1 ELSE 0 END) AS champions
@@ -119,6 +120,7 @@ async function classicStats(env, url) {
        sg_putting      AS putting,
        total_sg        AS totalSg,
        wins,
+       mulligans,
        earnings,
        fedex_rank      AS fedexRank,
        status_tier     AS statusTier,
