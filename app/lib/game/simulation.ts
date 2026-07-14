@@ -537,24 +537,22 @@ function eventHasCut(kind: ScheduleEvent["kind"]) {
 // a spike, so lower-SG builds still steal the occasional title.
 // ---------------------------------------------------------------------------
 
-// SD of one player's week-to-week SG around their season mean (per round). The
-// per-season volatilityFactor scales this, so streaky builds swing far more.
-// Real event logs are much lumpier than a narrow season-mean model: a +0.7 SG
-// player still posts plenty of +2 to +3 weeks, and those top finishes matter a
-// lot in the FedEx curve. Keep the field model intact, but let the player week
-// draw breathe enough to create that feast/famine shape.
-const WEEK_SG_SD = 1.15;
-const COURSE_FIT_SD = 0.32;
+// SD of one player's four-round event SG around their season mean (per round).
+// Four rounds pull a player's week back toward their season-long talent more
+// than a single round does, so this stays lively without letting one draw
+// overwhelm the whole tournament too often.
+const WEEK_SG_SD = 0.85;
+const COURSE_FIT_SD = 0.22;
 // Per-category week-to-week SD, used when a playoff event is broken out
 // category-by-category. These feed a skewed distribution below: positive
 // deltas are compressed into category-specific upside caps, while bad weeks
 // have more room to run. Putting still bounces the most week to week, approach
 // owns the biggest positive ceiling, and around-the-green stays quietest.
 const CATEGORY_WEEK_SD: Record<CategoryKey, number> = {
-  offTee: 0.56,
-  approach: 0.68,
-  aroundGreen: 0.24,
-  putting: 0.82,
+  offTee: 0.38,
+  approach: 0.46,
+  aroundGreen: 0.17,
+  putting: 0.54,
 };
 const CATEGORY_DELTA_LIMITS: Record<
   CategoryKey,
@@ -565,19 +563,20 @@ const CATEGORY_DELTA_LIMITS: Record<
   aroundGreen: { upside: 0.95, downside: 1.45 },
   putting: { upside: 1.95, downside: 3.6 },
 };
-// SD of the field's weekly SG outcomes; sets how spread out a leaderboard is
-// and how random the top of it plays.
-const FIELD_SPREAD = 1.75;
+// SD of the field's four-round SG outcomes; sets how spread out a leaderboard
+// is and how random the top of it plays.
+const FIELD_SPREAD = 1.5;
+const FINALE_FIELD_SPREAD = 1.15;
 // The field's mean SG scales with field strength. SG here is "true" strokes
 // gained — measured against the average PGA Tour field (the tour baseline), the
 // same scale as a player's season-long stats. A weak full-field event centres
 // just above 0, while signature events, majors, and the playoffs are stacked
-// with elite players and sit higher. The slope was halved (2.27 -> 1.135) so
-// those elite fields sit closer to the tour baseline: a genuinely strong true-SG
-// week now climbs the leaderboard instead of drowning in a field whose median
-// player is already +1.3, while winning still takes a real spike week.
-const FIELD_MEAN_SLOPE = 1.135;
-const FIELD_MEAN_ANCHOR = 0.316;
+// with elite players and sit higher. Event SG leaderboards are field-relative;
+// this offset converts the user's true-SG week into that stronger local frame.
+const FIELD_MEAN_SLOPE = 1.34;
+const FIELD_MEAN_ANCHOR = 0.3;
+const PLAYOFF_FIELD_PREMIUM = 0.12;
+const FINALE_FIELD_PREMIUM = 0.19;
 
 function fieldSize(event: ScheduleEvent) {
   if (event.fieldSize) return event.fieldSize;
@@ -586,7 +585,18 @@ function fieldSize(event: ScheduleEvent) {
 }
 
 function fieldMean(event: ScheduleEvent) {
-  return (event.fieldStrength - FIELD_MEAN_ANCHOR) * FIELD_MEAN_SLOPE;
+  const playoffPremium = event.kind === "playoff" ? PLAYOFF_FIELD_PREMIUM : 0;
+  const finalePremium =
+    event.id === "tour-championship" ? FINALE_FIELD_PREMIUM : 0;
+  return (
+    (event.fieldStrength - FIELD_MEAN_ANCHOR) * FIELD_MEAN_SLOPE +
+    playoffPremium +
+    finalePremium
+  );
+}
+
+function fieldSpread(event: ScheduleEvent) {
+  return event.id === "tour-championship" ? FINALE_FIELD_SPREAD : FIELD_SPREAD;
 }
 
 // Zelen & Severo approximation of the standard normal CDF.
@@ -606,7 +616,7 @@ function normCdf(z: number) {
 
 // Probability that a single field member outscores the player this week.
 function fieldBeatProbability(playerSg: number, event: ScheduleEvent) {
-  return 1 - normCdf((playerSg - fieldMean(event)) / FIELD_SPREAD);
+  return 1 - normCdf((playerSg - fieldMean(event)) / fieldSpread(event));
 }
 
 function round2(value: number) {
@@ -654,8 +664,9 @@ function isTiedFinish(
   event: ScheduleEvent,
   random: () => number,
 ) {
-  const z = (playerSg - fieldMean(event)) / FIELD_SPREAD;
-  const density = (0.3989422804014327 * Math.exp((-z * z) / 2)) / FIELD_SPREAD;
+  const spread = fieldSpread(event);
+  const z = (playerSg - fieldMean(event)) / spread;
+  const density = (0.3989422804014327 * Math.exp((-z * z) / 2)) / spread;
   const meanTieMates = (size - 1) * TIE_BIN_SG * density;
   // Poisson probability of at least one other player on the same score.
   const soloProb = Math.exp(-meanTieMates);
@@ -670,12 +681,11 @@ function sampleEventSg(
 ) {
   const random = createRandom(seed + index * 9973);
 
-  // SG figures are season-long means, but any given week is a sample around
-  // that mean. Most weeks cluster near the mean, but ~18% are "spike weeks"
-  // where a player runs way hot or ice cold (gain 5 one week, lose 1 the next).
-  // The per-season volatilityFactor decides if this build is streaky or steady.
+  // SG figures are season-long means, but any given four-round event is a
+  // sample around that mean. Most weeks cluster near the mean, with occasional
+  // spike weeks where a player runs hot or cold.
   const baseNoise = randomNormal(random);
-  const spike = random() < 0.18 ? randomNormal(random) * 2.05 : 0;
+  const spike = random() < 0.12 ? randomNormal(random) * 1.45 : 0;
   const weekSg = (baseNoise + spike) * WEEK_SG_SD * volatilityFactor;
   const courseFit = randomNormal(random) * COURSE_FIT_SD;
   return totalSg + weekSg + courseFit;
@@ -742,8 +752,8 @@ function simulatePlayoffEvent(
   volatilityFactor: number,
 ) {
   const random = createRandom(seed + index * 9973);
-  const formActive = random() < 0.18;
-  const formMagnitude = formActive ? randomNormal(random) * 1.15 : 0;
+  const formActive = random() < 0.12;
+  const formMagnitude = formActive ? randomNormal(random) * 0.8 : 0;
 
   const categories: CategoryBreakdown[] = CATEGORY_ORDER.map((category) => {
     const mean = categorySg[category];
@@ -1220,9 +1230,9 @@ export function simulateSeason(
   // SG can play out very differently from one season to the next.
   const seasonRandom = createRandom(seed ^ 0x51ed270b);
   const volatilityFactor = clamp(
-    0.6 + Math.abs(randomNormal(seasonRandom)) * 0.7,
-    0.6,
-    2.4,
+    0.65 + Math.abs(randomNormal(seasonRandom)) * 0.35,
+    0.65,
+    1.55,
   );
 
   // Let the player have a random volatility profile, but keep the full
