@@ -6,7 +6,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import rawSeasons from "../lib/data/player-seasons.json";
 import { formatCurrency, formatSg, positionLabel } from "../lib/format";
 import { CATEGORY_META, CATEGORY_ORDER } from "../lib/game/categories";
-import { closestFedExComp } from "../lib/game/fedex-comp";
+import { fedExCompByRank } from "../lib/game/fedex-comp";
+import { closestNotableSeasonComp } from "../lib/game/notable-comp";
 import {
   dailyRating,
   easternDateKey,
@@ -878,9 +879,6 @@ function RegularSeasonBlock({
   isCurrent: boolean;
   onContinue: () => void;
 }) {
-  // The 2025 FedEx Cup regular-season player whose points land closest to this
-  // run — a real-world comp instead of a text write-up.
-  const comp = closestFedExComp(summary.points);
   return (
     <section className="playoff-block playoff-block--regular" aria-label="Regular season">
       <div className="playoff-block__head">
@@ -905,15 +903,6 @@ function RegularSeasonBlock({
           <strong>{summary.points.toLocaleString()}</strong>
         </div>
       </div>
-      {comp ? (
-        <div className="player-comp" aria-label="Player comp">
-          <span className="eyebrow">Player Comp</span>
-          <strong>{comp.player}</strong>
-          <span className="player-comp__meta">
-            {comp.points.toLocaleString()} pts · No. {comp.rank} in 2025
-          </span>
-        </div>
-      ) : null}
       {isCurrent ? (
         <NextStepDialog
           eyebrow={summary.writeup.label}
@@ -985,6 +974,25 @@ function FinalBlock({
     ...finishes.filter((finish) => finish.position === 1).sort(byPrestige),
     ...finishes.filter((finish) => finish.position >= 2 && finish.position <= 5).sort(byPrestige),
   ];
+
+  // A real-world player comp. In the Daily Challenge that's the notable whose
+  // full-season strokes-gained total lands closest to this build; in a full
+  // season it's the 2025 player who finished at this run's FedEx Cup position.
+  const comp = (() => {
+    if (isDailyRecap) {
+      const daily = closestNotableSeasonComp(SEASONS, simulation.totalSg);
+      return daily
+        ? {
+            player: daily.player,
+            meta: `${daily.year} Season · ${formatSg(daily.totalSg)} Strokes Gained Total`,
+          }
+        : null;
+    }
+    const seasonComp = fedExCompByRank(simulation.fedExRank);
+    return seasonComp
+      ? { player: seasonComp.player, meta: `No. ${seasonComp.rank} in the 2025 FedEx Cup` }
+      : null;
+  })();
 
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
@@ -1135,6 +1143,14 @@ function FinalBlock({
           </div>
         </div>
       )}
+
+      {comp ? (
+        <div className="player-comp" aria-label="Player comp">
+          <span className="eyebrow">Player Comp</span>
+          <strong>{comp.player}</strong>
+          <span className="player-comp__meta">{comp.meta}</span>
+        </div>
+      ) : null}
 
       <div className="notable-finishes">
         <span className="notable-finishes__title">Notable Finishes</span>
