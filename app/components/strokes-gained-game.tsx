@@ -2162,6 +2162,72 @@ function DailyChallengeGame({
     0,
   );
 
+  const renderAnswerControls = (item: DailyChallengeItem, index: number) => {
+    const tileNumber = index + 1;
+    const ideal = idealByItemId.get(item.id);
+    const picked = assignments.find((assignment) => assignment.item.id === item.id);
+    const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
+    const nameState = nameGuesses[item.id];
+
+    return (
+      <>
+        <div className="daily-identify">
+          <span className="eyebrow daily-identify__label">Identify the Player</span>
+          {nameState === "correct" ? (
+            <p className="daily-identify__result is-correct">
+              {playerName} — best {ZONE_META[ideal ?? "putting"].label} unlocked
+            </p>
+          ) : nameState === "wrong" ? (
+            <p className="daily-identify__result is-wrong">
+              Not it — pick the SG category you think they own.
+            </p>
+          ) : (
+            <PlayerNameGuess names={PLAYER_NAMES} onSubmit={(name) => submitName(item, name)} />
+          )}
+          {nameErrors[item.id] && !nameState ? (
+            <span className="daily-name-hint">Pick a name from the list.</span>
+          ) : null}
+        </div>
+        <div
+          className="daily-tile__cats"
+          role="group"
+          aria-label={`Assign a category to clue ${tileNumber}`}
+        >
+          <span className="eyebrow daily-tile__cats-label">Or Pick Category</span>
+          {CATEGORY_ORDER.map((category) => {
+            const meta = CATEGORY_META[category];
+            const isActive = picked?.category === category;
+            // A correct name locks this clue's category to the ideal:
+            // the chips become read-only, showing the reward.
+            const nameLocked = nameGuesses[item.id] === "correct";
+            // A category can only live on one clue. If another clue
+            // already holds it, lock it here with a grey slash.
+            const takenByOther = assignments.some(
+              (assignment) => assignment.category === category && assignment.item.id !== item.id,
+            );
+            return (
+              <button
+                type="button"
+                key={category}
+                className={`daily-cat-chip daily-cat-chip--${category} ${
+                  isActive ? "is-active" : ""
+                } ${takenByOther ? "is-taken" : ""} ${nameLocked ? "is-locked" : ""}`}
+                aria-pressed={isActive}
+                disabled={takenByOther || nameLocked}
+                aria-label={`${meta.label} (${meta.shortLabel})${isActive ? " assigned" : ""}${
+                  takenByOther ? " (already used)" : ""
+                }`}
+                onClick={() => assignCategory(item, category)}
+              >
+                {meta.shortLabel}
+              </button>
+            );
+          })}
+        </div>
+      </>
+    );
+  };
+
   return (
     <section className="daily-challenge" aria-label={challenge.title}>
       <div className="daily-challenge__head">
@@ -2193,6 +2259,9 @@ function DailyChallengeGame({
           >
             →
           </button>
+          <div className="daily-browser__answer">
+            {renderAnswerControls(currentItem, currentIndex)}
+          </div>
           <div className="daily-browser__footer">
             <span>
               {currentIndex + 1}/{challenge.items.length}
@@ -2271,70 +2340,7 @@ function DailyChallengeGame({
                       >
                         <MediaCard media={item.media} compact />
                       </button>
-                      {(() => {
-                        const nameState = nameGuesses[item.id];
-                        return (
-                          <div className="daily-identify">
-                            <span className="eyebrow daily-identify__label">Identify the Player</span>
-                            {nameState === "correct" ? (
-                              <p className="daily-identify__result is-correct">
-                                {playerName} — best {ZONE_META[ideal ?? "putting"].label} unlocked
-                              </p>
-                            ) : nameState === "wrong" ? (
-                              <p className="daily-identify__result is-wrong">
-                                Not it — pick the SG category you think they own.
-                              </p>
-                            ) : (
-                              <PlayerNameGuess
-                                names={PLAYER_NAMES}
-                                onSubmit={(name) => submitName(item, name)}
-                              />
-                            )}
-                            {nameErrors[item.id] && !nameState ? (
-                              <span className="daily-name-hint">Pick a name from the list.</span>
-                            ) : null}
-                          </div>
-                        );
-                      })()}
-                      <div
-                        className="daily-tile__cats"
-                        role="group"
-                        aria-label={`Assign a category to clue ${tileNumber}`}
-                      >
-                        {CATEGORY_ORDER.map((category) => {
-                          const meta = CATEGORY_META[category];
-                          const isActive = picked?.category === category;
-                          // A correct name locks this clue's category to the ideal:
-                          // the chips become read-only, showing the reward.
-                          const nameLocked = nameGuesses[item.id] === "correct";
-                          // A category can only live on one clue. If another clue
-                          // already holds it, lock it here with a grey slash.
-                          const takenByOther = assignments.some(
-                            (assignment) =>
-                              assignment.category === category &&
-                              assignment.item.id !== item.id,
-                          );
-                          return (
-                            <button
-                              type="button"
-                              key={category}
-                              className={`daily-cat-chip daily-cat-chip--${category} ${
-                                isActive ? "is-active" : ""
-                              } ${
-                                takenByOther ? "is-taken" : ""
-                              } ${nameLocked ? "is-locked" : ""}`}
-                              aria-pressed={isActive}
-                              disabled={takenByOther || nameLocked}
-                              aria-label={`${meta.label} (${meta.shortLabel})${isActive ? " assigned" : ""}${
-                                takenByOther ? " (already used)" : ""
-                              }`}
-                              onClick={() => assignCategory(item, category)}
-                            >
-                              {meta.shortLabel}
-                            </button>
-                          );
-                        })}
-                      </div>
+                      {renderAnswerControls(item, index)}
                     </>
                   )}
                 </div>
