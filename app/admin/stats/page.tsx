@@ -82,6 +82,24 @@ function num(value: number | null | undefined, digits = 2) {
   return value === null || value === undefined ? "—" : value.toFixed(digits);
 }
 
+// created_at is stored as UTC via SQLite datetime('now') ("YYYY-MM-DD HH:MM:SS",
+// no zone marker). Parse it as UTC and render in US Eastern time (handles
+// EST/EDT automatically).
+function formatEastern(raw: string | null | undefined) {
+  if (!raw) return "—";
+  const parsed = new Date(`${raw.replace(" ", "T")}Z`);
+  if (Number.isNaN(parsed.getTime())) return raw;
+  return parsed.toLocaleString("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div style={card}>
@@ -305,7 +323,7 @@ function DailyView({ data, showByDay }: { data: DailyData; showByDay: boolean })
           <tbody>
             {data.rows.map((row) => (
               <tr key={row.id} style={{ borderTop: "1px solid rgba(128,128,128,0.25)" }}>
-                <td style={cell}>{row.createdAt}</td>
+                <td style={cell}>{formatEastern(row.createdAt)}</td>
                 <td style={{ ...cell, fontWeight: row.name ? 600 : 400 }}>{row.name || "—"}</td>
                 <td style={cell}>{row.date}</td>
                 <td style={cell}>{row.correctCategories}/4</td>
@@ -402,7 +420,7 @@ function ClassicView({ data }: { data: ClassicData }) {
           <tbody>
             {data.rows.map((row) => (
               <tr key={row.id} style={{ borderTop: "1px solid rgba(128,128,128,0.25)" }}>
-                <td style={cell}>{row.createdAt}</td>
+                <td style={cell}>{formatEastern(row.createdAt)}</td>
                 <td style={{ ...cell, fontWeight: row.name ? 600 : 400 }}>{row.name || "—"}</td>
                 <td style={cell}>{row.fedexRank ?? "—"}</td>
                 <td style={cell}>{row.statusTier ?? "—"}</td>
