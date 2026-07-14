@@ -155,9 +155,11 @@ function Header({
           Strokes Game
         </button>
         <nav className="site-header__nav">
+          {/* High Scores temporarily hidden — re-enable to expose the leaderboard.
           <Link className="header-link-button" href="/high-scores">
             High Scores
           </Link>
+          */}
           <button type="button" className="header-link-button" onClick={onHowToPlay}>
             How to Play
           </button>
@@ -547,9 +549,11 @@ function SiteFooter() {
     <footer className="site-footer">
       <span className="wordmark">Strokes Game</span>
       <div className="site-footer__links">
+        {/* High Scores temporarily hidden — re-enable to expose the leaderboard.
         <Link className="ghost-button site-footer__contact" href="/high-scores">
           High Scores
         </Link>
+        */}
         <Link className="ghost-button site-footer__contact" href="/contact">
           Contact Us
         </Link>
@@ -1293,11 +1297,14 @@ function FinalBlock({
         )}
       </div>
 
+      {/* Leaderboard name entry temporarily hidden — re-enable to let players
+          post a run to the All Time High Scores.
       <LeaderboardEntry
         mode={completionMode}
         completionId={completionId}
         earnings={simulation.earnings}
       />
+      */}
 
       <div className="recap-actions">
         <button type="button" className="primary-button" onClick={handleCopy}>
