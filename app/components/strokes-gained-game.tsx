@@ -81,13 +81,18 @@ type GameVariant = "classic" | "daily";
 
 // Fire-and-forget completion telemetry. Failures are swallowed so logging never
 // blocks or interrupts gameplay; `keepalive` lets it survive a page unload.
-function logCompletion(payload: Record<string, unknown>) {
-  void fetch("/api/log-completion", {
+// Resolves to the inserted row id (used to attach a leaderboard name later), or
+// null if the write failed or the id wasn't returned.
+function logCompletion(payload: Record<string, unknown>): Promise<number | null> {
+  return fetch("/api/log-completion", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     keepalive: true,
-  }).catch(() => {});
+  })
+    .then((res) => (res.ok ? res.json() : null))
+    .then((data) => (data && typeof data.id === "number" ? data.id : null))
+    .catch(() => null);
 }
 
 const STATS_MODE_LABEL: Record<StatsMode, string> = {
@@ -149,9 +154,14 @@ function Header({
         <button type="button" className="wordmark wordmark-button" onClick={onResetRequest}>
           Strokes Game
         </button>
-        <button type="button" className="header-link-button" onClick={onHowToPlay}>
-          How to Play
-        </button>
+        <nav className="site-header__nav">
+          <Link className="header-link-button" href="/high-scores">
+            High Scores
+          </Link>
+          <button type="button" className="header-link-button" onClick={onHowToPlay}>
+            How to Play
+          </button>
+        </nav>
       </div>
     </header>
   );
@@ -536,9 +546,14 @@ function SiteFooter() {
   return (
     <footer className="site-footer">
       <span className="wordmark">Strokes Game</span>
-      <Link className="ghost-button site-footer__contact" href="/contact">
-        Contact Us
-      </Link>
+      <div className="site-footer__links">
+        <Link className="ghost-button site-footer__contact" href="/high-scores">
+          High Scores
+        </Link>
+        <Link className="ghost-button site-footer__contact" href="/contact">
+          Contact Us
+        </Link>
+      </div>
     </footer>
   );
 }
@@ -915,12 +930,119 @@ function RegularSeasonBlock({
   );
 }
 
+// Optional name/initials entry on the season recap. The run itself is already
+// logged anonymously (fire-and-forget telemetry); this attaches a name to that
+// row so the score can appear on the "All Time High Scores" leaderboard. The
+// row id arrives asynchronously, so the submit stays disabled until it lands.
+const LEADERBOARD_NAME_KEY = "sg:leaderboard-name";
+
+function LeaderboardEntry({
+  mode,
+  completionId,
+  earnings,
+}: {
+  mode: GameVariant;
+  completionId?: number | null;
+  earnings: number;
+}) {
+  const [name, setName] = useState("");
+  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedName, setSavedName] = useState("");
+
+  // Prefill with the name used last time so repeat players don't retype it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const stored = window.localStorage.getItem(LEADERBOARD_NAME_KEY);
+    if (stored) setName(stored);
+  }, []);
+
+  const trimmed = name.replace(/\s+/g, " ").trim().slice(0, 24);
+  const canSubmit = trimmed.length > 0 && typeof completionId === "number" && status !== "saving";
+
+  const submit = async () => {
+    if (!canSubmit) return;
+    setStatus("saving");
+    try {
+      const res = await fetch("/api/high-scores", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode, id: completionId, name: trimmed }),
+      });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.ok) {
+        if (typeof window !== "undefined") {
+          window.localStorage.setItem(LEADERBOARD_NAME_KEY, trimmed);
+        }
+        setSavedName(trimmed);
+        setStatus("saved");
+      } else {
+        setStatus("error");
+      }
+    } catch {
+      setStatus("error");
+    }
+  };
+
+  if (status === "saved") {
+    return (
+      <div className="leaderboard-entry leaderboard-entry--done" aria-live="polite">
+        <span className="eyebrow">On the Leaderboard</span>
+        <p>
+          <strong>{savedName}</strong> is in with {formatCurrency(earnings)}.
+        </p>
+        <Link className="ghost-button" href="/high-scores">
+          See the High Scores
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="leaderboard-entry"
+      onSubmit={(event) => {
+        event.preventDefault();
+        void submit();
+      }}
+    >
+      <span className="eyebrow">Add to the Leaderboard</span>
+      <p className="leaderboard-entry__hint">
+        Post {formatCurrency(earnings)} to the All Time High Scores with your name or initials.
+      </p>
+      <div className="leaderboard-entry__row">
+        <input
+          className="leaderboard-entry__input"
+          type="text"
+          value={name}
+          maxLength={24}
+          placeholder="Name or initials"
+          aria-label="Name or initials for the leaderboard"
+          onChange={(event) => {
+            setName(event.target.value);
+            if (status === "error") setStatus("idle");
+          }}
+        />
+        <button type="submit" className="primary-button" disabled={!canSubmit}>
+          {status === "saving" ? "Adding…" : "Add"}
+        </button>
+      </div>
+      {status === "error" ? (
+        <p className="leaderboard-entry__error" role="alert">
+          Couldn&apos;t save that just now — give it another try.
+        </p>
+      ) : null}
+    </form>
+  );
+}
+
 function FinalBlock({
   simulation,
   assignments,
   mulligans,
   modeChips,
   dailyIdealMatches,
+  completionId,
+  completionMode,
   blockRef,
   onNewRound,
 }: {
@@ -929,6 +1051,8 @@ function FinalBlock({
   mulligans: number;
   modeChips: string[];
   dailyIdealMatches?: number;
+  completionId?: number | null;
+  completionMode: GameVariant;
   blockRef?: (node: HTMLElement | null) => void;
   onNewRound: () => void;
 }) {
@@ -1169,6 +1293,12 @@ function FinalBlock({
         )}
       </div>
 
+      <LeaderboardEntry
+        mode={completionMode}
+        completionId={completionId}
+        earnings={simulation.earnings}
+      />
+
       <div className="recap-actions">
         <button type="button" className="primary-button" onClick={handleCopy}>
           {copied ? "Copied!" : "Copy Recap"}
@@ -1350,6 +1480,8 @@ function SeasonPlayback({
   mulligans,
   modeChips,
   dailyIdealMatches,
+  completionId,
+  completionMode,
   onNewRound,
   suppressInitialScroll = false,
 }: {
@@ -1358,6 +1490,8 @@ function SeasonPlayback({
   mulligans: number;
   modeChips: string[];
   dailyIdealMatches?: number;
+  completionId?: number | null;
+  completionMode: GameVariant;
   onNewRound: () => void;
   suppressInitialScroll?: boolean;
 }) {
@@ -1464,6 +1598,8 @@ function SeasonPlayback({
             mulligans={mulligans}
             modeChips={modeChips}
             dailyIdealMatches={dailyIdealMatches}
+            completionId={completionId}
+            completionMode={completionMode}
             blockRef={setCurrentRef}
             onNewRound={onNewRound}
           />
@@ -2091,6 +2227,9 @@ export function StrokesGainedGame({
   // Set of run keys already sent to the completion logger, so each finished run
   // is logged exactly once. A fresh run produces a new key and logs again.
   const loggedRef = useRef<Set<string>>(new Set());
+  // The D1 row id of the just-logged run, so the season recap can attach an
+  // optional leaderboard name to it. Reset to null while a new run is logging.
+  const [completionId, setCompletionId] = useState<number | null>(null);
   const dailyChallenge = useMemo(() => getDailyChallenge(dailyDateKey), [dailyDateKey]);
 
   const eligibleSeasons = useMemo(() => {
@@ -2140,6 +2279,7 @@ export function StrokesGainedGame({
       dailySimulation.results.filter((result) => result.position === 1).length +
       dailySimulation.playoffStages.filter((stage) => stage.position === 1).length;
 
+    setCompletionId(null);
     logCompletion({
       mode: "daily",
       date: dailyChallenge.date,
@@ -2148,7 +2288,7 @@ export function StrokesGainedGame({
       sg: categorySgFromAssignments(dailyAssignments),
       wins,
       earnings: Math.round(dailySimulation.earnings),
-    });
+    }).then(setCompletionId);
   }, [
     gameVariant,
     dailySimulation,
@@ -2173,6 +2313,7 @@ export function StrokesGainedGame({
       simulation.results.filter((result) => result.position === 1).length +
       simulation.playoffStages.filter((stage) => stage.position === 1).length;
 
+    setCompletionId(null);
     logCompletion({
       mode: "classic",
       sg: categorySgFromAssignments(assignments),
@@ -2186,7 +2327,7 @@ export function StrokesGainedGame({
       yearMode,
       fieldMode,
       years: yearMode === "filter" ? selectedYears : [],
-    });
+    }).then(setCompletionId);
   }, [
     gameVariant,
     simulation,
@@ -2469,6 +2610,8 @@ export function StrokesGainedGame({
               mulligans={0}
               modeChips={["Daily Challenge", dailyChallenge.date]}
               dailyIdealMatches={dailyIdealMatches}
+              completionId={completionId}
+              completionMode="daily"
               onNewRound={resetDaily}
               suppressInitialScroll
             />
@@ -2525,6 +2668,8 @@ export function StrokesGainedGame({
             assignments={assignments}
             mulligans={mulligans}
             modeChips={buildModeChips(statsMode, yearMode, fieldMode, selectedYears)}
+            completionId={completionId}
+            completionMode="classic"
             onNewRound={resetGame}
             suppressInitialScroll
           />

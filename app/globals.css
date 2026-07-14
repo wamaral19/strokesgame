@@ -112,6 +112,9 @@ button {
 }
 
 .header-link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--line-strong);
   background: transparent;
   color: var(--brand-ink);
@@ -122,6 +125,8 @@ button {
   font-weight: 800;
   letter-spacing: 0.11em;
   text-transform: uppercase;
+  text-decoration: none;
+  line-height: 1;
 }
 
 .header-link-button:hover {
@@ -3314,4 +3319,266 @@ button {
     font-size: clamp(1.05rem, 4.6vw, 1.6rem);
     overflow-wrap: anywhere;
   }
+}
+
+/* ─── Header / footer nav groups ─────────────────────────────────────────────
+   The header and footer both carry the "High Scores" link alongside their
+   existing action. */
+.site-header__nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.site-footer__links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ─── Leaderboard entry on the season recap ──────────────────────────────────
+   Optional name/initials capture that attaches a run to the leaderboard. */
+.leaderboard-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 18px;
+  background: var(--surface-raised);
+}
+
+.leaderboard-entry__hint {
+  margin: 0;
+  color: rgba(26, 26, 26, 0.7);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.leaderboard-entry__row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.leaderboard-entry__input {
+  flex: 1 1 200px;
+  min-height: 44px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  padding: 0 18px;
+  background: var(--brand-cream);
+  color: var(--brand-ink);
+  font-size: 1rem;
+}
+
+.leaderboard-entry__input:focus-visible {
+  outline: 2px solid var(--brand-deep);
+  outline-offset: 1px;
+}
+
+.leaderboard-entry__row .primary-button {
+  flex: 0 0 auto;
+}
+
+.leaderboard-entry__row .primary-button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.leaderboard-entry__error {
+  margin: 0;
+  color: var(--brand-flag);
+  font-size: 0.88rem;
+}
+
+.leaderboard-entry--done {
+  align-items: flex-start;
+}
+
+.leaderboard-entry--done p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* ─── High Scores page ───────────────────────────────────────────────────────
+   Top-three earnings boards, split by game mode (and, for Classic, config +
+   mulligans). */
+.high-scores {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 56px 24px 90px;
+}
+
+.high-scores__head h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-weight: 680;
+  line-height: 1.02;
+}
+
+.high-scores__head p {
+  margin: 0;
+  max-width: 560px;
+  color: rgba(26, 26, 26, 0.7);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.high-scores__tabs {
+  display: flex;
+  gap: 8px;
+  margin: 30px 0 26px;
+  border-bottom: 1px solid var(--line);
+}
+
+.high-scores__tab {
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: rgba(26, 26, 26, 0.55);
+  padding: 10px 4px;
+  margin-bottom: -1px;
+  font-family: var(--font-condensed);
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.high-scores__tab.is-active {
+  color: var(--brand-ink);
+  border-bottom-color: var(--brand-ink);
+}
+
+.high-scores__status {
+  color: rgba(26, 26, 26, 0.65);
+  font-size: 1rem;
+}
+
+.high-scores__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+.high-scores__back {
+  margin-top: 40px;
+  text-decoration: none;
+}
+
+.score-group {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.score-group__head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.score-group__head h2 {
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.score-group__boards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.score-subboard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.score-subboard__label {
+  font-family: var(--font-condensed);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.score-board {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.score-board__empty {
+  margin: 0;
+  color: rgba(26, 26, 26, 0.5);
+  font-size: 0.92rem;
+}
+
+.score-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 12px 16px;
+  background: var(--surface-raised);
+}
+
+.score-row--1 {
+  border-color: var(--brand-ink);
+}
+
+.score-row__rank {
+  font-family: var(--font-condensed);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26, 26, 26, 0.6);
+}
+
+.score-row--1 .score-row__rank {
+  color: var(--brand-deep);
+}
+
+.score-row__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.score-row__name {
+  font-weight: 700;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.score-row__meta {
+  color: rgba(26, 26, 26, 0.6);
+  font-size: 0.82rem;
+}
+
+.score-row__earnings {
+  font-family: var(--font-condensed);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--brand-deep);
+  white-space: nowrap;
 }

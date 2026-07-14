@@ -28,10 +28,14 @@ CREATE TABLE IF NOT EXISTS daily_completions (
   sg_putting         REAL    NOT NULL DEFAULT 0,
   wins               INTEGER NOT NULL DEFAULT 0, -- simulated season wins (regular + playoffs)
   earnings           INTEGER NOT NULL DEFAULT 0, -- simulated season on-course earnings (USD)
+  player_name        TEXT,                       -- optional initials/name attached for the leaderboard
   created_at         TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_daily_completions_date ON daily_completions (challenge_date);
+-- Leaderboard reads the top earners per challenge date.
+CREATE INDEX IF NOT EXISTS idx_daily_completions_leaderboard
+  ON daily_completions (challenge_date, earnings DESC);
 
 -- Classic mode has no "correct categories" score; its distinguishing dimension
 -- is the mode config the player chose (stats/time-frame/field). It shares the
@@ -53,7 +57,11 @@ CREATE TABLE IF NOT EXISTS classic_completions (
   year_mode       TEXT,                        -- "current" | "all" | "filter"
   field_mode      TEXT,                        -- "entire" | "notables"
   years           TEXT,                        -- comma-joined seasons when year_mode = "filter"
+  player_name     TEXT,                        -- optional initials/name attached for the leaderboard
   created_at      TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_classic_completions_created ON classic_completions (created_at);
+-- Leaderboard reads the top earners per config bucket (stats/time-frame/field × mulligans).
+CREATE INDEX IF NOT EXISTS idx_classic_completions_leaderboard
+  ON classic_completions (stats_mode, year_mode, field_mode, earnings DESC);

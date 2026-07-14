@@ -23,6 +23,14 @@ function clampInt(value, min, max) {
   return Math.min(max, Math.max(min, n));
 }
 
+// Optional leaderboard name/initials. Collapse whitespace, cap length, and
+// return null for anything empty so anonymous runs stay anonymous.
+function cleanName(value) {
+  if (typeof value !== "string") return null;
+  const trimmed = value.replace(/\s+/g, " ").trim().slice(0, 24);
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function onRequestPost(context) {
   const { request, env } = context;
 
@@ -41,6 +49,7 @@ export async function onRequestPost(context) {
   const sg = payload?.sg && typeof payload.sg === "object" ? payload.sg : {};
   const wins = clampInt(payload?.wins, 0, 60);
   const earnings = Math.round(finiteNumber(payload?.earnings, 0));
+  const playerName = cleanName(payload?.playerName);
 
   try {
     if (mode === "classic") {
@@ -51,12 +60,12 @@ export async function onRequestPost(context) {
             .join(",")
         : null;
 
-      await env.DB.prepare(
+      const result = await env.DB.prepare(
         `INSERT INTO classic_completions
            (sg_off_tee, sg_approach, sg_around_green, sg_putting, total_sg,
             wins, mulligans, earnings, fedex_rank, status_tier,
-            stats_mode, year_mode, field_mode, years)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            stats_mode, year_mode, field_mode, years, player_name)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
         .bind(
           finiteNumber(sg.offTee),
@@ -73,10 +82,11 @@ export async function onRequestPost(context) {
           typeof payload?.yearMode === "string" ? payload.yearMode.slice(0, 16) : null,
           typeof payload?.fieldMode === "string" ? payload.fieldMode.slice(0, 16) : null,
           years,
+          playerName,
         )
         .run();
 
-      return json({ ok: true });
+      return json({ ok: true, id: result?.meta?.last_row_id ?? null });
     }
 
     const date = typeof payload?.date === "string" ? payload.date : "";
@@ -86,12 +96,12 @@ export async function onRequestPost(context) {
     const correct = clampInt(payload?.correctCategories, 0, 4);
     const rating = typeof payload?.rating === "string" ? payload.rating.slice(0, 32) : null;
 
-    await env.DB.prepare(
+    const result = await env.DB.prepare(
       `INSERT INTO daily_completions
          (challenge_date, correct_categories, rating,
           sg_off_tee, sg_approach, sg_around_green, sg_putting,
-          wins, earnings)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          wins, earnings, player_name)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
       .bind(
         date,
@@ -103,10 +113,11 @@ export async function onRequestPost(context) {
         finiteNumber(sg.putting),
         wins,
         earnings,
+        playerName,
       )
       .run();
 
-    return json({ ok: true });
+    return json({ ok: true, id: result?.meta?.last_row_id ?? null });
   } catch (error) {
     return json({ error: String(error && error.message ? error.message : error) }, 500);
   }
