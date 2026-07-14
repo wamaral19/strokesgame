@@ -1512,6 +1512,37 @@ button {
   background: transparent;
 }
 
+/* A video clue carries a centred play badge so it reads as playable footage,
+   not a still image. It's purely a cue — taps pass through to the media/expand
+   button beneath it. It hides once playback starts (see the component). */
+.daily-media--video {
+  position: relative;
+}
+
+.daily-media__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(44px, 9vw, 66px);
+  height: clamp(44px, 9vw, 66px);
+  border-radius: 50%;
+  background: rgba(26, 26, 26, 0.55);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
+
+.daily-media__play::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  transform: translate(-50%, -50%);
+  border-style: solid;
+  border-width: 0.55em 0 0.55em 0.9em;
+  border-color: transparent transparent transparent #fffaf0;
+}
+
 .daily-media figcaption,
 .daily-media--text {
   padding: 28px;
@@ -1664,6 +1695,12 @@ button {
   z-index: 1;
 }
 
+/* While a clue's name field is focused, lift the whole tile so its autocomplete
+   panel isn't clipped behind the neighbouring tiles in the grid. */
+.daily-tile:focus-within {
+  z-index: 30;
+}
+
 .daily-tile.is-assigned {
   background: var(--surface-raised);
 }
@@ -1763,6 +1800,149 @@ button {
     rgba(26, 26, 26, 0.4) calc(50% + 0.75px),
     transparent calc(50% + 0.75px)
   );
+}
+
+/* Once a clue's player is named correctly its chips are read-only — the ideal
+   category stays lit but nothing can be re-picked. */
+.daily-cat-chip.is-locked {
+  cursor: default;
+  opacity: 0.9;
+}
+
+.daily-cat-chip.is-locked:not(.is-active) {
+  color: rgba(26, 26, 26, 0.32);
+  background: rgba(230, 228, 220, 0.5);
+  border-color: rgba(26, 26, 26, 0.18);
+  box-shadow: none;
+}
+
+/* The "Identify the Player" block: a name field + submit above each clue's SG
+   category chips. Guess the golfer to be handed their best category. */
+.daily-identify {
+  display: grid;
+  gap: 6px;
+  padding: 10px 10px 0;
+}
+
+.daily-identify__label {
+  color: rgba(26, 26, 26, 0.6);
+}
+
+.daily-name-form {
+  display: flex;
+  gap: 6px;
+  align-items: start;
+}
+
+/* The field wraps the input so the autocomplete list can be absolutely
+   positioned directly beneath it. */
+.daily-name-field {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.daily-name-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--brand-ink);
+  padding: 8px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  border-radius: 2px;
+}
+
+.daily-name-input:focus-visible {
+  outline: 2px solid var(--brand-ink);
+  outline-offset: -1px;
+}
+
+/* White autocomplete panel dropping in below the input. */
+.daily-name-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  box-shadow: 0 8px 20px rgba(26, 26, 26, 0.16);
+  max-height: 232px;
+  overflow-y: auto;
+}
+
+.daily-name-list li {
+  margin: 0;
+}
+
+.daily-name-option {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--brand-ink);
+  padding: 8px 10px;
+  text-align: left;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.daily-name-option:hover,
+.daily-name-option.is-active {
+  background: var(--surface-raised);
+}
+
+.daily-name-submit {
+  flex: 0 0 auto;
+  border: 1px solid var(--brand-ink);
+  background: var(--brand-ink);
+  color: var(--brand-cream);
+  padding: 8px 14px;
+  font-family: var(--font-condensed);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  border-radius: 2px;
+}
+
+.daily-name-submit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.daily-name-hint {
+  font-family: var(--font-condensed);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand-flag);
+}
+
+.daily-identify__result {
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.daily-identify__result.is-correct {
+  color: var(--brand-deep);
+}
+
+.daily-identify__result.is-wrong {
+  color: rgba(26, 26, 26, 0.6);
 }
 
 .daily-tile__status,

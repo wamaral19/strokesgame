@@ -169,7 +169,8 @@ function Header({
   );
 }
 
-function HowToPlayDialog({ onClose }: { onClose: () => void }) {
+function HowToPlayDialog({ onClose, variant }: { onClose: () => void; variant?: GameVariant }) {
+  const isDaily = variant === "daily";
   return (
     <div
       className="reset-confirm how-to-play"
@@ -187,11 +188,19 @@ function HowToPlayDialog({ onClose }: { onClose: () => void }) {
             specific area: off the tee (OTT), approach (APP), around the green (ARG), and putting
             (PUTT). Higher is better.
           </p>
-          <p>
-            Scottie Scheffler had a dominant 2025, but if one player had Rory&apos;s driver,
-            Viktor&apos;s irons, Sungjae&apos;s chipping, and Sam Burns&apos; putting they would have
-            had an even better year. Build the player to beat Scottie and the rest of the field.
-          </p>
+          {isDaily ? (
+            <p>
+              Each clue is one of four golfers. Know them? Identify them by name and you&apos;re handed
+              their best SG category. Don&apos;t know them? Pick the category you think they&apos;re best
+              in among the four. One name guess per player — miss it and it&apos;s category only.
+            </p>
+          ) : (
+            <p>
+              Scottie Scheffler had a dominant 2025, but if one player had Rory&apos;s driver,
+              Viktor&apos;s irons, Sungjae&apos;s chipping, and Sam Burns&apos; putting they would have
+              had an even better year. Build the player to beat Scottie and the rest of the field.
+            </p>
+          )}
         </div>
         <button type="button" className="primary-button" onClick={onClose}>
           Got It
@@ -1616,6 +1625,30 @@ function SeasonPlayback({
   );
 }
 
+// A video clue: shows a play-button overlay so it reads as a video (not a still
+// image). Compact tiles have no native controls, so the overlay is the only cue;
+// the full-size viewer gets native controls plus the overlay until playback
+// starts. A `#t=` fragment nudges the browser to paint the first frame as a
+// poster even when preload is limited.
+function VideoMedia({ media, compact }: { media: DailyChallengeMedia & { kind: "video" }; compact: boolean }) {
+  const [playing, setPlaying] = useState(false);
+  const posterSrc = media.src.includes("#") ? media.src : `${media.src}#t=0.1`;
+  return (
+    <figure className={`daily-media daily-media--video ${compact ? "daily-media--compact" : ""}`}>
+      <video
+        src={posterSrc}
+        aria-label={media.alt ?? media.title}
+        controls={!compact}
+        playsInline
+        preload="metadata"
+        onPlay={() => setPlaying(true)}
+        onPause={() => setPlaying(false)}
+      />
+      {!playing ? <span className="daily-media__play" aria-hidden="true" /> : null}
+    </figure>
+  );
+}
+
 function MediaCard({ media, compact = false }: { media: DailyChallengeMedia; compact?: boolean }) {
   if (media.kind === "image") {
     return (
@@ -1626,16 +1659,120 @@ function MediaCard({ media, compact = false }: { media: DailyChallengeMedia; com
   }
 
   if (media.kind === "video") {
-    return (
-      <figure className={`daily-media ${compact ? "daily-media--compact" : ""}`}>
-        <video src={media.src} aria-label={media.alt ?? media.title} controls={!compact} playsInline />
-      </figure>
-    );
+    return <VideoMedia media={media} compact={compact} />;
   }
 
   return (
     <div className={`daily-media daily-media--text ${compact ? "daily-media--compact" : ""}`}>
       <p>{media.body}</p>
+    </div>
+  );
+}
+
+// A player-name combobox: a text field with a white autocomplete list that
+// drops in *below* the input (not the native datalist popup, whose placement and
+// styling we can't control). Typing filters the all-time roster; picking a name
+// or pressing Enter fills the field. Confirming is a separate Submit tap.
+function PlayerNameGuess({
+  names,
+  onSubmit,
+}: {
+  names: string[];
+  onSubmit: (name: string) => void;
+}) {
+  const [value, setValue] = useState("");
+  const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  const matches = useMemo(() => {
+    const query = value.trim().toLowerCase();
+    if (!query) return [];
+    const starts = names.filter((name) => name.toLowerCase().startsWith(query));
+    const contains = names.filter(
+      (name) => !name.toLowerCase().startsWith(query) && name.toLowerCase().includes(query),
+    );
+    return [...starts, ...contains].slice(0, 6);
+  }, [names, value]);
+
+  // Close the list when focus/pointer leaves the combobox.
+  useEffect(() => {
+    if (!open) return;
+    const handlePointer = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", handlePointer);
+    return () => document.removeEventListener("pointerdown", handlePointer);
+  }, [open]);
+
+  const choose = (name: string) => {
+    setValue(name);
+    setOpen(false);
+  };
+
+  return (
+    <div className="daily-name-form" ref={wrapRef}>
+      <div className="daily-name-field">
+        <input
+          className="daily-name-input"
+          type="text"
+          role="combobox"
+          aria-expanded={open && matches.length > 0}
+          aria-autocomplete="list"
+          autoComplete="off"
+          placeholder="Type a player's name…"
+          value={value}
+          onChange={(event) => {
+            setValue(event.target.value);
+            setOpen(true);
+            setActiveIndex(0);
+          }}
+          onFocus={() => setOpen(true)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" && matches.length) {
+              event.preventDefault();
+              setOpen(true);
+              setActiveIndex((index) => Math.min(index + 1, matches.length - 1));
+            } else if (event.key === "ArrowUp" && matches.length) {
+              event.preventDefault();
+              setActiveIndex((index) => Math.max(index - 1, 0));
+            } else if (event.key === "Enter") {
+              event.preventDefault();
+              if (open && matches[activeIndex]) {
+                choose(matches[activeIndex]);
+              } else if (value.trim()) {
+                onSubmit(value);
+              }
+            } else if (event.key === "Escape") {
+              setOpen(false);
+            }
+          }}
+        />
+        {open && matches.length ? (
+          <ul className="daily-name-list" role="listbox">
+            {matches.map((name, index) => (
+              <li key={name} role="option" aria-selected={index === activeIndex}>
+                <button
+                  type="button"
+                  className={`daily-name-option ${index === activeIndex ? "is-active" : ""}`}
+                  onClick={() => choose(name)}
+                  onMouseEnter={() => setActiveIndex(index)}
+                >
+                  {name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+      <button
+        type="button"
+        className="daily-name-submit"
+        onClick={() => onSubmit(value)}
+        disabled={!value.trim()}
+      >
+        Submit
+      </button>
     </div>
   );
 }
@@ -1827,6 +1964,13 @@ function DailyChallengeGame({
   const [phase, setPhase] = useState<"browse" | "assign" | "revealed">("assign");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [assignments, setAssignments] = useState<DailyTileAssignment[]>([]);
+  // Per-clue player-name guess. Each clue gets exactly one submission: guess the
+  // golfer right and you're handed their ideal SG category; guess wrong and you
+  // lose the name option and can only pick a category. Keyed by clue item id.
+  const [nameGuesses, setNameGuesses] = useState<Record<string, "correct" | "wrong">>({});
+  // A transient "pick a name from the list" hint when a submission isn't a real
+  // player name — this doesn't burn the clue's single guess.
+  const [nameErrors, setNameErrors] = useState<Record<string, boolean>>({});
   // The revealed "ideal slots" result — scrolled into view on Submit so the
   // player lands on their score, not the season playback further down.
   const resultRef = useRef<HTMLDivElement | null>(null);
@@ -1899,6 +2043,41 @@ function DailyChallengeGame({
         { category, item },
       ];
     });
+  };
+
+  // Force a category onto a clue without the toggle behaviour of assignCategory —
+  // used when a correct name guess hands the clue its ideal category. Pulls the
+  // category off whatever clue held it and clears this clue's prior pick.
+  const assignCategoryDirect = (item: DailyChallengeItem, category: CategoryKey) => {
+    if (phase === "revealed") return;
+    setAssignments((current) => [
+      ...current.filter(
+        (assignment) => assignment.category !== category && assignment.item.id !== item.id,
+      ),
+      { category, item },
+    ]);
+  };
+
+  // Submit a clue's one-and-only name guess. A value that isn't a real player
+  // name just flags a hint and leaves the guess unspent. A correct name locks in
+  // the clue's ideal category; a wrong one closes the name option for that clue.
+  const submitName = (item: DailyChallengeItem, rawGuess: string) => {
+    if (phase === "revealed" || nameGuesses[item.id]) return;
+    const guess = rawGuess.trim();
+    const match = PLAYER_NAMES.find((name) => name.toLowerCase() === guess.toLowerCase());
+    if (!match) {
+      setNameErrors((current) => ({ ...current, [item.id]: true }));
+      return;
+    }
+    setNameErrors((current) => ({ ...current, [item.id]: false }));
+    const actual = playerNameByItemId.get(item.id);
+    if (match === actual) {
+      setNameGuesses((current) => ({ ...current, [item.id]: "correct" }));
+      const ideal = idealByItemId.get(item.id);
+      if (ideal) assignCategoryDirect(item, ideal);
+    } else {
+      setNameGuesses((current) => ({ ...current, [item.id]: "wrong" }));
+    }
   };
 
   // Revealing is an explicit, confirmed step: the player taps Submit once all
@@ -2029,7 +2208,7 @@ function DailyChallengeGame({
         <>
           {phase === "assign" ? (
             <div className="daily-assign-bar">
-              <span>{assignments.length}/4 assigned — tap a category on each clue.</span>
+              <span>{assignments.length}/4 assigned — name a player or tap a category.</span>
               <button
                 type="button"
                 className="ghost-button"
@@ -2092,6 +2271,31 @@ function DailyChallengeGame({
                       >
                         <MediaCard media={item.media} compact />
                       </button>
+                      {(() => {
+                        const nameState = nameGuesses[item.id];
+                        return (
+                          <div className="daily-identify">
+                            <span className="eyebrow daily-identify__label">Identify the Player</span>
+                            {nameState === "correct" ? (
+                              <p className="daily-identify__result is-correct">
+                                {playerName} — best {ZONE_META[ideal ?? "putting"].label} unlocked
+                              </p>
+                            ) : nameState === "wrong" ? (
+                              <p className="daily-identify__result is-wrong">
+                                Not it — pick the SG category you think they own.
+                              </p>
+                            ) : (
+                              <PlayerNameGuess
+                                names={PLAYER_NAMES}
+                                onSubmit={(name) => submitName(item, name)}
+                              />
+                            )}
+                            {nameErrors[item.id] && !nameState ? (
+                              <span className="daily-name-hint">Pick a name from the list.</span>
+                            ) : null}
+                          </div>
+                        );
+                      })()}
                       <div
                         className="daily-tile__cats"
                         role="group"
@@ -2100,6 +2304,9 @@ function DailyChallengeGame({
                         {CATEGORY_ORDER.map((category) => {
                           const meta = CATEGORY_META[category];
                           const isActive = picked?.category === category;
+                          // A correct name locks this clue's category to the ideal:
+                          // the chips become read-only, showing the reward.
+                          const nameLocked = nameGuesses[item.id] === "correct";
                           // A category can only live on one clue. If another clue
                           // already holds it, lock it here with a grey slash.
                           const takenByOther = assignments.some(
@@ -2115,9 +2322,9 @@ function DailyChallengeGame({
                                 isActive ? "is-active" : ""
                               } ${
                                 takenByOther ? "is-taken" : ""
-                              }`}
+                              } ${nameLocked ? "is-locked" : ""}`}
                               aria-pressed={isActive}
-                              disabled={takenByOther}
+                              disabled={takenByOther || nameLocked}
                               aria-label={`${meta.label} (${meta.shortLabel})${isActive ? " assigned" : ""}${
                                 takenByOther ? " (already used)" : ""
                               }`}
@@ -2597,7 +2804,9 @@ export function StrokesGainedGame({
         />
       ) : null}
 
-      {howToPlayOpen ? <HowToPlayDialog onClose={() => setHowToPlayOpen(false)} /> : null}
+      {howToPlayOpen ? (
+        <HowToPlayDialog onClose={() => setHowToPlayOpen(false)} variant={gameVariant} />
+      ) : null}
 
       {gameVariant === "daily" ? (
         <>
