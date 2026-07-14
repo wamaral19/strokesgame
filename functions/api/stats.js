@@ -69,6 +69,7 @@ async function dailyStats(env, url) {
        sg_putting         AS putting,
        wins,
        earnings,
+       player_name        AS name,
        created_at         AS createdAt
      FROM daily_completions ${where}
      ORDER BY id DESC
@@ -128,6 +129,7 @@ async function classicStats(env, url) {
        year_mode       AS yearMode,
        field_mode      AS fieldMode,
        years,
+       player_name     AS name,
        created_at      AS createdAt
      FROM classic_completions
      ORDER BY id DESC

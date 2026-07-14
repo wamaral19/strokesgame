@@ -28,6 +28,7 @@ type DailyData = {
     putting: number;
     wins: number;
     earnings: number;
+    name: string | null;
     createdAt: string;
   }[];
 };
@@ -64,6 +65,7 @@ type ClassicData = {
     yearMode: string | null;
     fieldMode: string | null;
     years: string | null;
+    name: string | null;
     createdAt: string;
   }[];
 };
@@ -288,6 +290,7 @@ function DailyView({ data, showByDay }: { data: DailyData; showByDay: boolean })
           <thead>
             <tr style={{ textAlign: "left" }}>
               <th style={cell}>When</th>
+              <th style={cell}>Player</th>
               <th style={cell}>Date</th>
               <th style={cell}>Correct</th>
               <th style={cell}>Rating</th>
@@ -303,6 +306,7 @@ function DailyView({ data, showByDay }: { data: DailyData; showByDay: boolean })
             {data.rows.map((row) => (
               <tr key={row.id} style={{ borderTop: "1px solid rgba(128,128,128,0.25)" }}>
                 <td style={cell}>{row.createdAt}</td>
+                <td style={{ ...cell, fontWeight: row.name ? 600 : 400 }}>{row.name || "—"}</td>
                 <td style={cell}>{row.date}</td>
                 <td style={cell}>{row.correctCategories}/4</td>
                 <td style={cell}>{row.rating ?? "—"}</td>
@@ -316,7 +320,7 @@ function DailyView({ data, showByDay }: { data: DailyData; showByDay: boolean })
             ))}
             {data.rows.length === 0 ? (
               <tr>
-                <td colSpan={10} style={{ padding: "12px 8px", opacity: 0.7 }}>
+                <td colSpan={11} style={{ padding: "12px 8px", opacity: 0.7 }}>
                   No completions logged yet.
                 </td>
               </tr>
@@ -381,6 +385,7 @@ function ClassicView({ data }: { data: ClassicData }) {
           <thead>
             <tr style={{ textAlign: "left" }}>
               <th style={cell}>When</th>
+              <th style={cell}>Player</th>
               <th style={cell}>FedEx</th>
               <th style={cell}>Outcome</th>
               <th style={cell}>Off Tee</th>
@@ -398,6 +403,7 @@ function ClassicView({ data }: { data: ClassicData }) {
             {data.rows.map((row) => (
               <tr key={row.id} style={{ borderTop: "1px solid rgba(128,128,128,0.25)" }}>
                 <td style={cell}>{row.createdAt}</td>
+                <td style={{ ...cell, fontWeight: row.name ? 600 : 400 }}>{row.name || "—"}</td>
                 <td style={cell}>{row.fedexRank ?? "—"}</td>
                 <td style={cell}>{row.statusTier ?? "—"}</td>
                 <td style={cell}>{formatSg(row.offTee)}</td>
@@ -417,7 +423,7 @@ function ClassicView({ data }: { data: ClassicData }) {
             ))}
             {data.rows.length === 0 ? (
               <tr>
-                <td colSpan={12} style={{ padding: "12px 8px", opacity: 0.7 }}>
+                <td colSpan={13} style={{ padding: "12px 8px", opacity: 0.7 }}>
                   No completions logged yet.
                 </td>
               </tr>
