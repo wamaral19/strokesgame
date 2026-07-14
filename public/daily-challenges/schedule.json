@@ -176,5 +176,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-14",
+    "date": "2026-07-14",
+    "title": "Silhouette Tuesday - 7/13",
+    "items": [
+      {
+        "id": "2026-07-14-clue-1-max-homa",
+        "playerId": "max_homa",
+        "media": {
+          "kind": "video",
+          "title": "Homa_swing_web_ready.mp4",
+          "src": "/daily-challenges/2026-07-14/homa-swing-web-ready.mp4",
+          "alt": "Homa_swing_web_ready.mp4"
+        }
+      },
+      {
+        "id": "2026-07-14-clue-2-brooks-koepka",
+        "playerId": "brooks_koepka",
+        "media": {
+          "kind": "video",
+          "title": "Koepka_swing_web_ready.mp4",
+          "src": "/daily-challenges/2026-07-14/koepka-swing-web-ready.mp4",
+          "alt": "Koepka_swing_web_ready.mp4"
+        }
+      },
+      {
+        "id": "2026-07-14-clue-3-tony-finau",
+        "playerId": "tony_finau",
+        "media": {
+          "kind": "video",
+          "title": "Finau_swing_web_ready.mp4",
+          "src": "/daily-challenges/2026-07-14/finau-swing-web-ready.mp4",
+          "alt": "Finau_swing_web_ready.mp4"
+        }
+      },
+      {
+        "id": "2026-07-14-clue-4-jordan-spieth",
+        "playerId": "jordan_spieth",
+        "media": {
+          "kind": "video",
+          "title": "Spieth_swing_web_ready.mp4",
+          "src": "/daily-challenges/2026-07-14/spieth-swing-web-ready.mp4",
+          "alt": "Spieth_swing_web_ready.mp4"
+        }
+      }
+    ]
   }
 ]
