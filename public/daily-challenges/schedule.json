@@ -223,5 +223,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-15",
+    "date": "2026-07-15",
+    "title": "Daily Challenge",
+    "items": [
+      {
+        "id": "2026-07-15-clue-1-collin-morikawa",
+        "playerId": "collin_morikawa",
+        "media": {
+          "kind": "image",
+          "title": "Collin Morikawa WITB.webp",
+          "src": "/daily-challenges/2026-07-15/collin-morikawa-witb.webp",
+          "alt": "Collin Morikawa WITB.webp"
+        }
+      },
+      {
+        "id": "2026-07-15-clue-2-rory-mcilroy",
+        "playerId": "rory_mcilroy",
+        "media": {
+          "kind": "image",
+          "title": "Rory Mcilroy WITB.jpeg",
+          "src": "/daily-challenges/2026-07-15/rory-mcilroy-witb.jpeg",
+          "alt": "Rory Mcilroy WITB.jpeg"
+        }
+      },
+      {
+        "id": "2026-07-15-clue-3-xander-schauffele",
+        "playerId": "xander_schauffele",
+        "media": {
+          "kind": "image",
+          "title": "Xander Witb.png",
+          "src": "/daily-challenges/2026-07-15/xander-witb.png",
+          "alt": "Xander Witb.png"
+        }
+      },
+      {
+        "id": "2026-07-15-clue-4-sam-burns",
+        "playerId": "sam_burns",
+        "media": {
+          "kind": "image",
+          "title": "Sam Burns WITB.webp",
+          "src": "/daily-challenges/2026-07-15/sam-burns-witb.webp",
+          "alt": "Sam Burns WITB.webp"
+        }
+      }
+    ]
   }
 ]
