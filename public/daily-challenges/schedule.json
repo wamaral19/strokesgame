@@ -270,5 +270,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-16",
+    "date": "2026-07-16",
+    "title": "Colleges and Wins - 7/16",
+    "items": [
+      {
+        "id": "2026-07-16-clue-1-rickie-fowler",
+        "playerId": "rickie_fowler",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-15 at 10.57.51 PM.png",
+          "src": "/daily-challenges/2026-07-16/screenshot-2026-07-15-at-10-57-51-pm.png",
+          "alt": "Screenshot 2026-07-15 at 10.57.51 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-16-clue-2-ludvig-aberg",
+        "playerId": "ludvig_aberg",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-15 at 10.58.01 PM.png",
+          "src": "/daily-challenges/2026-07-16/screenshot-2026-07-15-at-10-58-01-pm.png",
+          "alt": "Screenshot 2026-07-15 at 10.58.01 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-16-clue-3-collin-morikawa",
+        "playerId": "collin_morikawa",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-15 at 10.49.04 PM.png",
+          "src": "/daily-challenges/2026-07-16/screenshot-2026-07-15-at-10-49-04-pm.png",
+          "alt": "Screenshot 2026-07-15 at 10.49.04 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-16-clue-4-sepp-straka",
+        "playerId": "sepp_straka",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-15 at 10.57.42 PM.png",
+          "src": "/daily-challenges/2026-07-16/screenshot-2026-07-15-at-10-57-42-pm.png",
+          "alt": "Screenshot 2026-07-15 at 10.57.42 PM.png"
+        }
+      }
+    ]
   }
 ]
