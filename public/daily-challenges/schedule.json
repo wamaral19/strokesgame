@@ -317,5 +317,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-17",
+    "date": "2026-07-17",
+    "title": "Personal Logos - 7/17 Daily",
+    "items": [
+      {
+        "id": "2026-07-17-clue-1-tyrrell-hatton",
+        "playerId": "tyrrell_hatton",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-16 at 10.15.54 PM.png",
+          "src": "/daily-challenges/2026-07-17/screenshot-2026-07-16-at-10-15-54-pm.png",
+          "alt": "Screenshot 2026-07-16 at 10.15.54 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-17-clue-2-justin-rose",
+        "playerId": "justin_rose",
+        "media": {
+          "kind": "image",
+          "title": "Justin-Rose-C.webp",
+          "src": "/daily-challenges/2026-07-17/justin-rose-c.webp",
+          "alt": "Justin-Rose-C.webp"
+        }
+      },
+      {
+        "id": "2026-07-17-clue-3-brooks-koepka",
+        "playerId": "brooks_koepka",
+        "media": {
+          "kind": "image",
+          "title": "2qjc4cj3_400x400.jpg",
+          "src": "/daily-challenges/2026-07-17/2qjc4cj3-400x400.jpg",
+          "alt": "2qjc4cj3_400x400.jpg"
+        }
+      },
+      {
+        "id": "2026-07-17-clue-4-sergio-garcia",
+        "playerId": "sergio_garcia",
+        "media": {
+          "kind": "image",
+          "title": "Sergio-Garcia-C.webp",
+          "src": "/daily-challenges/2026-07-17/sergio-garcia-c.webp",
+          "alt": "Sergio-Garcia-C.webp"
+        }
+      }
+    ]
   }
 ]
