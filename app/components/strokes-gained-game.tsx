@@ -191,8 +191,9 @@ function HowToPlayDialog({ onClose, variant }: { onClose: () => void; variant?: 
           {isDaily ? (
             <p>
               Each clue is one of four golfers. Know them? Identify them by name and you&apos;re handed
-              their best SG category. Don&apos;t know them? Pick the category you think they&apos;re best
-              in among the four. One name guess per player — miss it and it&apos;s category only.
+              their best SG category along with the best year of their career. Don&apos;t know them? Lock
+              in the category you think they own — match the ideal and it still counts. One shot per
+              clue: miss the name and you&apos;re randomly assigned a category from a random year.
             </p>
           ) : (
             <p>
@@ -1147,13 +1148,13 @@ function FinalBlock({
       `💰 On Course Earnings: ${formatCurrency(simulation.earnings)}`,
       `🥇 Wins: ${wins.length}`,
       isDailyRecap
-        ? `🎯 Ideal Matches: ${dailyIdealMatches}/4`
+        ? `🎯 Correct: ${dailyIdealMatches}/4`
         : `🔁 Mulligans: ${mulligans}`,
       "",
       `Mode: ${modeChips.join(" · ")}`,
       "",
       isDailyRecap
-        ? `Daily Score: ${dailyIdealMatches}/4 ideal categories`
+        ? `Daily Score: ${dailyIdealMatches}/4 correct`
         : "Lineup:",
       ...(isDailyRecap
         ? []
@@ -1231,7 +1232,7 @@ function FinalBlock({
           <strong>{wins.length}</strong>
         </div>
         <div>
-          <span className="eyebrow">{isDailyRecap ? "Ideal Matches" : "Mulligans"}</span>
+          <span className="eyebrow">{isDailyRecap ? "Correct" : "Mulligans"}</span>
           <strong>{isDailyRecap ? `${dailyIdealMatches}/4` : mulligans}</strong>
         </div>
       </div>
@@ -1244,7 +1245,7 @@ function FinalBlock({
       {isDailyRecap ? (
         <div className="recap-daily-score" aria-label="Daily challenge score">
           <div>
-            <span className="recap-lineup-cat">Ideal Categories</span>
+            <span className="recap-lineup-cat">Correct</span>
             <strong>{dailyIdealMatches}/4</strong>
           </div>
           <div>
@@ -1922,9 +1923,24 @@ function randomSeasonForPlayer(playerId: string) {
   return seasons[Math.floor(Math.random() * seasons.length)];
 }
 
-function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
-  const ideal = new Map<string, CategoryKey>();
-  if (items.length !== CATEGORY_ORDER.length) return ideal;
+// The category assignment (item id -> category) that maximizes total best-year
+// strokes gained, given a set of already-locked item->category pairs. The
+// still-available categories are distributed across the still-unanswered items
+// to maximize the combined SG of everyone's best season in their assigned
+// category. Recomputed after every lock, so a clue's "optimal" (the category
+// you get credit for) shifts as earlier guesses claim categories out of the
+// pool — being right depends on what's already happened in the run.
+function optimalGivenLocks(
+  items: DailyChallengeItem[],
+  locked: Map<string, CategoryKey>,
+): Map<string, CategoryKey> {
+  const result = new Map(locked);
+  const remainingItems = items.filter((item) => !locked.has(item.id));
+  const usedCategories = new Set(locked.values());
+  const remainingCategories = CATEGORY_ORDER.filter((category) => !usedCategories.has(category));
+  if (remainingItems.length === 0 || remainingItems.length !== remainingCategories.length) {
+    return result;
+  }
 
   function permutations<T>(values: T[]): T[][] {
     if (values.length <= 1) return [values];
@@ -1937,9 +1953,9 @@ function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
   }
 
   let bestTotal = -Infinity;
-  let bestOrder = CATEGORY_ORDER;
-  for (const order of permutations(CATEGORY_ORDER)) {
-    const total = items.reduce((sum, item, index) => {
+  let bestOrder = remainingCategories;
+  for (const order of permutations(remainingCategories)) {
+    const total = remainingItems.reduce((sum, item, index) => {
       return sum + (bestSeasonForPlayerCategory(item.playerId, order[index])?.sg[order[index]] ?? -100);
     }, 0);
     if (total > bestTotal) {
@@ -1948,8 +1964,8 @@ function optimalCategoryByDailyItem(items: DailyChallengeItem[]) {
     }
   }
 
-  items.forEach((item, index) => ideal.set(item.id, bestOrder[index]));
-  return ideal;
+  remainingItems.forEach((item, index) => result.set(item.id, bestOrder[index]));
+  return result;
 }
 
 function DailyChallengeGame({
@@ -1968,6 +1984,10 @@ function DailyChallengeGame({
   // golfer right and you're handed their ideal SG category; guess wrong and you
   // lose the name option and can only pick a category. Keyed by clue item id.
   const [nameGuesses, setNameGuesses] = useState<Record<string, "correct" | "wrong">>({});
+  // Whether each committed clue counts as "right" — a correctly identified player
+  // or a manually picked category that matched the ideal at commit time. Drives
+  // the score, the rating, and whether the slot resolves to a best or random year.
+  const [outcomes, setOutcomes] = useState<Record<string, "right" | "wrong">>({});
   // A transient "pick a name from the list" hint when a submission isn't a real
   // player name — this doesn't burn the clue's single guess.
   const [nameErrors, setNameErrors] = useState<Record<string, boolean>>({});
@@ -1984,8 +2004,6 @@ function DailyChallengeGame({
     );
   }, [challenge]);
 
-  const idealByItemId = useMemo(() => optimalCategoryByDailyItem(challenge.items), [challenge]);
-
   const currentItem = challenge.items[currentIndex] ?? challenge.items[0];
   const complete = assignments.length === CATEGORY_ORDER.length;
 
@@ -2000,10 +2018,10 @@ function DailyChallengeGame({
   const [spinTick, setSpinTick] = useState(0);
 
   const score = useMemo(() => {
-    return assignments.reduce((count, assignment) => {
-      return count + (idealByItemId.get(assignment.item.id) === assignment.category ? 1 : 0);
+    return challenge.items.reduce((count, item) => {
+      return count + (outcomes[item.id] === "right" ? 1 : 0);
     }, 0);
-  }, [assignments, idealByItemId]);
+  }, [challenge, outcomes]);
 
   const rating = dailyRating(score);
   const isBallKnower = score === CATEGORY_ORDER.length;
@@ -2023,46 +2041,41 @@ function DailyChallengeGame({
     );
   };
 
-  // Assign a strokes-gained category to a clue. Each category lives on exactly
-  // one clue and each clue holds exactly one category, so placing a category
-  // pulls it off whatever clue held it and clears the target clue's prior pick.
-  // Tapping a clue's already-active category clears it.
-  const assignCategory = (item: DailyChallengeItem, category: CategoryKey) => {
-    if (phase === "revealed") return;
-    setAssignments((current) => {
-      const isActive = current.some(
-        (assignment) => assignment.item.id === item.id && assignment.category === category,
-      );
-      if (isActive) {
-        return current.filter((assignment) => assignment.item.id !== item.id);
-      }
-      return [
-        ...current.filter(
-          (assignment) => assignment.category !== category && assignment.item.id !== item.id,
-        ),
-        { category, item },
-      ];
-    });
-  };
+  // The categories already claimed by committed clues, as an item -> category
+  // map. Used to recompute the "optimal" for whatever's still open.
+  const lockedFromAssignments = () =>
+    new Map(assignments.map((assignment) => [assignment.item.id, assignment.category]));
 
-  // Force a category onto a clue without the toggle behaviour of assignCategory —
-  // used when a correct name guess hands the clue its ideal category. Pulls the
-  // category off whatever clue held it and clears this clue's prior pick.
-  const assignCategoryDirect = (item: DailyChallengeItem, category: CategoryKey) => {
-    if (phase === "revealed") return;
+  // Lock a clue's answer for good: fix its category, record whether it counts as
+  // right, and remove that category from the pool for every clue still open. A
+  // clue can only be committed once — no re-shuffling after the fact, since the
+  // score is point-in-time.
+  const commit = (item: DailyChallengeItem, category: CategoryKey, outcome: "right" | "wrong") => {
     setAssignments((current) => [
       ...current.filter(
         (assignment) => assignment.category !== category && assignment.item.id !== item.id,
       ),
       { category, item },
     ]);
+    setOutcomes((current) => ({ ...current, [item.id]: outcome }));
+  };
+
+  // Manually lock in a category for a clue (the "don't know them" fallback). It
+  // counts as right only if it matches the ideal for this clue given whatever's
+  // already been claimed — being right depends on what's happened so far.
+  const commitCategory = (item: DailyChallengeItem, category: CategoryKey) => {
+    if (phase === "revealed" || outcomes[item.id]) return;
+    if (assignments.some((a) => a.category === category && a.item.id !== item.id)) return;
+    const optimal = optimalGivenLocks(challenge.items, lockedFromAssignments()).get(item.id);
+    commit(item, category, category === optimal ? "right" : "wrong");
   };
 
   // Submit a clue's one-and-only name guess. A value that isn't a real player
   // name just flags a hint and leaves the guess unspent. A correct name locks in
-  // the clue's ideal category; a wrong one closes the name option for that clue.
+  // the ideal category (given what's been claimed) plus the player's best year;
+  // a wrong one draws a random category — never the ideal — and a random year.
   const submitName = (item: DailyChallengeItem, rawGuess: string) => {
-    if (phase === "revealed" || nameGuesses[item.id]) return;
+    if (phase === "revealed" || outcomes[item.id]) return;
     const guess = rawGuess.trim();
     const match = PLAYER_NAMES.find((name) => name.toLowerCase() === guess.toLowerCase());
     if (!match) {
@@ -2070,44 +2083,57 @@ function DailyChallengeGame({
       return;
     }
     setNameErrors((current) => ({ ...current, [item.id]: false }));
+    const locks = lockedFromAssignments();
+    const optimal = optimalGivenLocks(challenge.items, locks).get(item.id);
     const actual = playerNameByItemId.get(item.id);
     if (match === actual) {
       setNameGuesses((current) => ({ ...current, [item.id]: "correct" }));
-      const ideal = idealByItemId.get(item.id);
-      if (ideal) assignCategoryDirect(item, ideal);
+      if (optimal) commit(item, optimal, "right");
     } else {
       setNameGuesses((current) => ({ ...current, [item.id]: "wrong" }));
+      // Randomly assign a category from those still open, excluding the ideal —
+      // a wrong guess never lucks into the pick that would have scored.
+      const used = new Set(locks.values());
+      const available = CATEGORY_ORDER.filter((category) => !used.has(category));
+      const pool = available.filter((category) => category !== optimal);
+      const draw = pool.length > 0 ? pool : available;
+      const pick = draw[Math.floor(Math.random() * draw.length)];
+      if (pick) commit(item, pick, "wrong");
     }
   };
 
-  // Revealing is an explicit, confirmed step: the player taps Submit once all
-  // four slots are filled. No auto-lock, so they can re-shuffle picks first.
+  // Revealing is automatic: since every answer is a permanent commit, the run
+  // locks the moment the fourth slot is filled — no separate Submit step.
   const reveal = useCallback(() => {
     if (!complete) return;
-    const ballKnower =
-      assignments.reduce(
-        (count, assignment) =>
-          count + (idealByItemId.get(assignment.item.id) === assignment.category ? 1 : 0),
-        0,
-      ) === CATEGORY_ORDER.length;
+    const ballKnower = score === CATEGORY_ORDER.length;
+    // Each slot resolves on its own outcome: a right call (player identified or
+    // ideal category picked) earns that player's best year in the assigned
+    // category; a miss gets a random year from their career.
     const resolved = assignments
       .map((assignment) => {
-        const season = ballKnower
+        const right = outcomes[assignment.item.id] === "right";
+        const season = right
           ? bestSeasonForPlayerCategory(assignment.item.playerId, assignment.category)
           : randomSeasonForPlayer(assignment.item.playerId);
         return season ? { category: assignment.category, season } : undefined;
       })
       .filter((assignment): assignment is SlotAssignment => Boolean(assignment));
     if (resolved.length !== CATEGORY_ORDER.length) return;
-    // A perfect run lands settled; a random-year run spins the rail in below.
+    // A perfect run lands settled; anything less spins the rail in below.
     setSpinSettled(ballKnower ? CATEGORY_ORDER.length : 0);
     setResolvedAssignments(resolved);
     setPhase("revealed");
     // A perfect run has nothing to spin, so hand off to the season playback (and
-    // its FedEx Cup popup) right away. A random-year run defers that until the
-    // spin animation finishes — see the spin effect below.
+    // its FedEx Cup popup) right away. A spun run defers that until the spin
+    // animation finishes — see the spin effect below.
     if (ballKnower) onComplete(resolved, score);
-  }, [assignments, complete, idealByItemId, onComplete, score]);
+  }, [assignments, complete, outcomes, onComplete, score]);
+
+  // Auto-lock the run the instant all four clues are committed.
+  useEffect(() => {
+    if (phase === "assign" && complete) reveal();
+  }, [phase, complete, reveal]);
 
   useEffect(() => {
     if (phase !== "revealed") return;
@@ -2164,10 +2190,12 @@ function DailyChallengeGame({
 
   const renderAnswerControls = (item: DailyChallengeItem, index: number) => {
     const tileNumber = index + 1;
-    const ideal = idealByItemId.get(item.id);
-    const picked = assignments.find((assignment) => assignment.item.id === item.id);
+    const committed = assignments.find((assignment) => assignment.item.id === item.id);
     const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
     const nameState = nameGuesses[item.id];
+    const outcome = outcomes[item.id];
+    const isLocked = Boolean(committed);
+    const assignedLabel = committed ? ZONE_META[committed.category].label : "";
 
     return (
       <>
@@ -2175,16 +2203,22 @@ function DailyChallengeGame({
           <span className="eyebrow daily-identify__label">Identify the Player</span>
           {nameState === "correct" ? (
             <p className="daily-identify__result is-correct">
-              {playerName} — best {ZONE_META[ideal ?? "putting"].label} unlocked
+              {playerName} — best {assignedLabel} unlocked
             </p>
           ) : nameState === "wrong" ? (
             <p className="daily-identify__result is-wrong">
-              Not it — pick the SG category you think they own.
+              Not it — randomly assigned {assignedLabel}.
+            </p>
+          ) : committed ? (
+            <p className={`daily-identify__result ${outcome === "right" ? "is-correct" : ""}`}>
+              {outcome === "right"
+                ? `${assignedLabel} — you called it`
+                : `Locked in ${assignedLabel}`}
             </p>
           ) : (
             <PlayerNameGuess names={PLAYER_NAMES} onSubmit={(name) => submitName(item, name)} />
           )}
-          {nameErrors[item.id] && !nameState ? (
+          {nameErrors[item.id] && !isLocked ? (
             <span className="daily-name-hint">Pick a name from the list.</span>
           ) : null}
         </div>
@@ -2193,13 +2227,12 @@ function DailyChallengeGame({
           role="group"
           aria-label={`Assign a category to clue ${tileNumber}`}
         >
-          <span className="eyebrow daily-tile__cats-label">Or Pick Category</span>
+          <span className="eyebrow daily-tile__cats-label">
+            {isLocked ? "Category" : "Or Pick Category"}
+          </span>
           {CATEGORY_ORDER.map((category) => {
             const meta = CATEGORY_META[category];
-            const isActive = picked?.category === category;
-            // A correct name locks this clue's category to the ideal:
-            // the chips become read-only, showing the reward.
-            const nameLocked = nameGuesses[item.id] === "correct";
+            const isActive = committed?.category === category;
             // A category can only live on one clue. If another clue
             // already holds it, lock it here with a grey slash.
             const takenByOther = assignments.some(
@@ -2211,13 +2244,13 @@ function DailyChallengeGame({
                 key={category}
                 className={`daily-cat-chip daily-cat-chip--${category} ${
                   isActive ? "is-active" : ""
-                } ${takenByOther ? "is-taken" : ""} ${nameLocked ? "is-locked" : ""}`}
+                } ${takenByOther ? "is-taken" : ""} ${isLocked && !isActive ? "is-locked" : ""}`}
                 aria-pressed={isActive}
-                disabled={takenByOther || nameLocked}
+                disabled={isLocked || takenByOther}
                 aria-label={`${meta.label} (${meta.shortLabel})${isActive ? " assigned" : ""}${
                   takenByOther ? " (already used)" : ""
                 }`}
-                onClick={() => assignCategory(item, category)}
+                onClick={() => commitCategory(item, category)}
               >
                 {meta.shortLabel}
               </button>
@@ -2291,10 +2324,10 @@ function DailyChallengeGame({
           <div className="daily-tile-grid" aria-label="Daily clue tiles">
             {challenge.items.map((item, index) => {
               const tileNumber = index + 1;
-              const ideal = idealByItemId.get(item.id);
               const picked = assignments.find((assignment) => assignment.item.id === item.id);
-              const pickedSeason = picked
-                ? bestSeasonForPlayerCategory(item.playerId, picked.category)
+              const outcome = outcomes[item.id];
+              const resolved = picked
+                ? resolvedAssignments.find((slot) => slot.category === picked.category)
                 : undefined;
               const playerName = playerNameByItemId.get(item.id) ?? "Unknown Player";
               return (
@@ -2309,21 +2342,19 @@ function DailyChallengeGame({
                       <MediaCard media={item.media} compact />
                       <span className="daily-tile__reveal">
                         <strong>{playerName}</strong>
-                        {/* Only a perfect run earns the year + SG readout here.
-                            A random-year run reveals the name only. */}
-                        {isBallKnower && pickedSeason && picked ? (
+                        {/* A correct call shows its best-year readout; a miss
+                            reveals the name only (its random year spins on the rail). */}
+                        {outcome === "right" && resolved && picked ? (
                           <span>
-                            {`${pickedSeason.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
-                              pickedSeason.sg[picked.category],
+                            {`${resolved.season.year} ${CATEGORY_META[picked.category].shortLabel} ${formatSg(
+                              resolved.season.sg[picked.category],
                             )}`}
                           </span>
                         ) : null}
                       </span>
-                      {picked && ideal ? (
-                        <span
-                          className={picked.category === ideal ? "daily-pick is-correct" : "daily-pick"}
-                        >
-                          Picked {ZONE_META[picked.category].label} · Ideal {ZONE_META[ideal].label}
+                      {picked ? (
+                        <span className={outcome === "right" ? "daily-pick is-correct" : "daily-pick"}>
+                          {outcome === "right" ? "Correct" : "Missed"} · {ZONE_META[picked.category].label}
                         </span>
                       ) : null}
                     </>
@@ -2348,23 +2379,14 @@ function DailyChallengeGame({
             })}
           </div>
 
-          {phase === "assign" ? (
-            <div className="daily-actions">
-              <span>{assignments.length}/4 slots assigned</span>
-              <button type="button" className="primary-button" onClick={reveal} disabled={!complete}>
-                Submit
-              </button>
-            </div>
-          ) : null}
-
           {phase === "revealed" ? (
             <div className="daily-result" ref={resultRef}>
               <div className="daily-result__head">
                 <span className="eyebrow">{rating}</span>
                 <p>
                   {isBallKnower
-                    ? "4/4 — You get the best year of their career in the SG Category"
-                    : `${score}/4 Ideal Categories — you get a random year from their career. Get them all right and get their best year.`}
+                    ? "4/4 — every call lands the best year of that player's career in the category."
+                    : `${score}/4 correct — correct calls get the player's best year; misses get a random year. Nail all four to run the table.`}
                 </p>
               </div>
               <div className="playoff-stat-rail daily-profile-rail" aria-label="Daily player profile">

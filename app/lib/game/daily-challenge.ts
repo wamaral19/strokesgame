@@ -34,7 +34,12 @@ export type DailyChallenge = {
   items: DailyChallengeItem[];
 };
 
-export type DailyChallengeRating = "Ball Knower" | "Almost" | "Bleh" | "Trash";
+export type DailyChallengeRating =
+  | "Ball Knower 🧠"
+  | "Solid 👍"
+  | "Casual 😐"
+  | "Mid 🤡"
+  | "Trash 🗑️";
 
 export const DAILY_CHALLENGES = (schedule as DailyChallenge[]).slice().sort((a, b) =>
   a.date.localeCompare(b.date),
@@ -60,8 +65,9 @@ export function getDailyChallenge(dateKey = easternDateKey()) {
 }
 
 export function dailyRating(score: number): DailyChallengeRating {
-  if (score === 4) return "Ball Knower";
-  if (score === 2) return "Almost";
-  if (score === 1) return "Bleh";
-  return "Trash";
+  if (score >= 4) return "Ball Knower 🧠";
+  if (score === 3) return "Solid 👍";
+  if (score === 2) return "Casual 😐";
+  if (score === 1) return "Mid 🤡";
+  return "Trash 🗑️";
 }
