@@ -411,5 +411,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-19",
+    "date": "2026-07-19",
+    "title": "Wiki Grids: Past Champions - 7/19 Daily",
+    "items": [
+      {
+        "id": "2026-07-19-clue-1-henrik-stenson",
+        "playerId": "henrik_stenson",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-17 at 10.44.23 PM.png",
+          "src": "/daily-challenges/2026-07-19/screenshot-2026-07-17-at-10-44-23-pm.png",
+          "alt": "Screenshot 2026-07-17 at 10.44.23 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-19-clue-2-zach-johnson",
+        "playerId": "zach_johnson",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-17 at 10.44.48 PM.png",
+          "src": "/daily-challenges/2026-07-19/screenshot-2026-07-17-at-10-44-48-pm.png",
+          "alt": "Screenshot 2026-07-17 at 10.44.48 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-19-clue-3-ernie-els",
+        "playerId": "ernie_els",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-17 at 10.45.15 PM.png",
+          "src": "/daily-challenges/2026-07-19/screenshot-2026-07-17-at-10-45-15-pm.png",
+          "alt": "Screenshot 2026-07-17 at 10.45.15 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-19-clue-4-francesco-molinari",
+        "playerId": "francesco_molinari",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-17 at 10.45.47 PM.png",
+          "src": "/daily-challenges/2026-07-19/screenshot-2026-07-17-at-10-45-47-pm.png",
+          "alt": "Screenshot 2026-07-17 at 10.45.47 PM.png"
+        }
+      }
+    ]
   }
 ]
