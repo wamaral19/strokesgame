@@ -364,5 +364,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-18",
+    "date": "2026-07-18",
+    "title": "Rules Officials - 7/17 Daily",
+    "items": [
+      {
+        "id": "2026-07-18-clue-1-bryson-dechambeau",
+        "playerId": "bryson_dechambeau",
+        "media": {
+          "kind": "image",
+          "title": "Bryson-static.png",
+          "src": "/daily-challenges/2026-07-18/bryson-static.png",
+          "alt": "Bryson-static.png"
+        }
+      },
+      {
+        "id": "2026-07-18-clue-2-tiger-woods",
+        "playerId": "tiger_woods",
+        "media": {
+          "kind": "image",
+          "title": "Tiger-15th-Augusta-static.png",
+          "src": "/daily-challenges/2026-07-18/tiger-15th-augusta-static.png",
+          "alt": "Tiger-15th-Augusta-static.png"
+        }
+      },
+      {
+        "id": "2026-07-18-clue-3-dustin-johnson",
+        "playerId": "dustin_johnson",
+        "media": {
+          "kind": "image",
+          "title": "DJ-Grounds-Club-static.png",
+          "src": "/daily-challenges/2026-07-18/dj-grounds-club-static.png",
+          "alt": "DJ-Grounds-Club-static.png"
+        }
+      },
+      {
+        "id": "2026-07-18-clue-4-patrick-reed",
+        "playerId": "patrick_reed",
+        "media": {
+          "kind": "image",
+          "title": "Patrick-Reed-Sand-static.png",
+          "src": "/daily-challenges/2026-07-18/patrick-reed-sand-static.png",
+          "alt": "Patrick-Reed-Sand-static.png"
+        }
+      }
+    ]
   }
 ]
