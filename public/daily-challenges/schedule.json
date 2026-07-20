@@ -458,5 +458,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-20",
+    "date": "2026-07-20",
+    "title": "Partials - 7/20 Daily",
+    "items": [
+      {
+        "id": "2026-07-20-clue-1-brian-harman",
+        "playerId": "brian_harman",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-19 at 9.40.14 PM.png",
+          "src": "/daily-challenges/2026-07-20/screenshot-2026-07-19-at-9-40-14-pm.png",
+          "alt": "Screenshot 2026-07-19 at 9.40.14 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-20-clue-2-kurt-kitayama",
+        "playerId": "kurt_kitayama",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-19 at 9.34.58 PM.png",
+          "src": "/daily-challenges/2026-07-20/screenshot-2026-07-19-at-9-34-58-pm.png",
+          "alt": "Screenshot 2026-07-19 at 9.34.58 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-20-clue-3-keith-mitchell",
+        "playerId": "keith_mitchell",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-19 at 9.33.11 PM.png",
+          "src": "/daily-challenges/2026-07-20/screenshot-2026-07-19-at-9-33-11-pm.png",
+          "alt": "Screenshot 2026-07-19 at 9.33.11 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-20-clue-4-matt-fitzpatrick",
+        "playerId": "matt_fitzpatrick",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-19 at 9.30.04 PM.png",
+          "src": "/daily-challenges/2026-07-20/screenshot-2026-07-19-at-9-30-04-pm.png",
+          "alt": "Screenshot 2026-07-19 at 9.30.04 PM.png"
+        }
+      }
+    ]
   }
 ]
