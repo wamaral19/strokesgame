@@ -505,5 +505,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-21",
+    "date": "2026-07-21",
+    "title": "Course Horses - Players With The Most Wins at a Course",
+    "items": [
+      {
+        "id": "2026-07-21-clue-1-bubba-watson",
+        "playerId": "bubba_watson",
+        "media": {
+          "kind": "image",
+          "title": "rivieraleadimage-847-christrotman.avif",
+          "src": "/daily-challenges/2026-07-21/rivieraleadimage-847-christrotman.avif",
+          "alt": "rivieraleadimage-847-christrotman.avif"
+        }
+      },
+      {
+        "id": "2026-07-21-clue-2-ernie-els",
+        "playerId": "ernie_els",
+        "media": {
+          "kind": "image",
+          "title": "tour-hawaii-news-2.avif",
+          "src": "/daily-challenges/2026-07-21/tour-hawaii-news-2.avif",
+          "alt": "tour-hawaii-news-2.avif"
+        }
+      },
+      {
+        "id": "2026-07-21-clue-3-phil-mickelson",
+        "playerId": "phil_mickelson",
+        "media": {
+          "kind": "image",
+          "title": "dfUiG7aogqGwWs2mtPv8r.jpg",
+          "src": "/daily-challenges/2026-07-21/dfuig7aogqgwws2mtpv8r.jpg",
+          "alt": "dfUiG7aogqGwWs2mtPv8r.jpg"
+        }
+      },
+      {
+        "id": "2026-07-21-clue-4-tiger-woods",
+        "playerId": "tiger_woods",
+        "media": {
+          "kind": "image",
+          "title": "TheMonster1329.avif",
+          "src": "/daily-challenges/2026-07-21/themonster1329.avif",
+          "alt": "TheMonster1329.avif"
+        }
+      }
+    ]
   }
 ]
