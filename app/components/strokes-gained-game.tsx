@@ -1059,6 +1059,7 @@ function FinalBlock({
   completionMode,
   blockRef,
   onNewRound,
+  newRoundLabel = "New Round",
 }: {
   simulation: SeasonSimulation;
   assignments: SlotAssignment[];
@@ -1069,6 +1070,7 @@ function FinalBlock({
   completionMode: GameVariant;
   blockRef?: (node: HTMLElement | null) => void;
   onNewRound: () => void;
+  newRoundLabel?: string;
 }) {
   const isDailyRecap = dailyIdealMatches !== undefined;
   // Wins span the whole season: regular-season events plus any playoff-event
@@ -1133,11 +1135,6 @@ function FinalBlock({
   })();
 
   const [copied, setCopied] = useState(false);
-  const [canNativeShare, setCanNativeShare] = useState(false);
-
-  useEffect(() => {
-    setCanNativeShare(typeof navigator !== "undefined" && typeof navigator.share === "function");
-  }, []);
 
   // A plain-text version of the recap so a run can be pasted anywhere (group
   // chats, notes) as well as screenshotted. Mirrors the on-screen content.
@@ -1199,15 +1196,6 @@ function FinalBlock({
       window.setTimeout(() => setCopied(false), 2200);
     } catch {
       // Clipboard can be blocked (permissions, insecure context) — fail quietly.
-    }
-  }, [buildShareText]);
-
-  const handleShare = useCallback(async () => {
-    const text = buildShareText();
-    try {
-      await navigator.share({ title: "Strokes Game — Season Recap", text });
-    } catch {
-      // User dismissed the share sheet, or it isn't available — no-op.
     }
   }, [buildShareText]);
 
@@ -1318,18 +1306,12 @@ function FinalBlock({
 
       <div className="recap-actions">
         <button type="button" className="primary-button" onClick={handleCopy}>
-          {copied ? "Copied!" : "Copy Recap"}
+          {copied ? "Copied!" : "Share"}
         </button>
-        {canNativeShare ? (
-          <button type="button" className="ghost-button" onClick={handleShare}>
-            Share
-          </button>
-        ) : null}
-        <span className="recap-actions__hint">Screenshot this recap to share it anywhere.</span>
       </div>
 
       <button type="button" className="primary-button playoff-block__reset" onClick={onNewRound}>
-        New Round
+        {newRoundLabel}
       </button>
     </section>
   );
@@ -1500,6 +1482,7 @@ function SeasonPlayback({
   completionId,
   completionMode,
   onNewRound,
+  newRoundLabel,
   suppressInitialScroll = false,
 }: {
   simulation: SeasonSimulation;
@@ -1510,6 +1493,7 @@ function SeasonPlayback({
   completionId?: number | null;
   completionMode: GameVariant;
   onNewRound: () => void;
+  newRoundLabel?: string;
   suppressInitialScroll?: boolean;
 }) {
   const stages = simulation.playoffStages;
@@ -1619,6 +1603,7 @@ function SeasonPlayback({
             completionMode={completionMode}
             blockRef={setCurrentRef}
             onNewRound={onNewRound}
+            newRoundLabel={newRoundLabel}
           />
         ) : null}
       </div>
@@ -2769,6 +2754,13 @@ export function StrokesGainedGame({
     setDailyRunId((value) => value + 1);
   };
 
+  const playClassicFromDaily = () => {
+    clearSpinTimers();
+    setDailyAssignments([]);
+    setDailyIdealMatches(undefined);
+    router.push("/classic");
+  };
+
   // Stable identity so the daily reveal-rail spin effect (which lists onComplete
   // in its deps) doesn't tear down and re-run when this fires. An inline arrow
   // here re-ran the spin — and the season playback — a second time.
@@ -2856,7 +2848,8 @@ export function StrokesGainedGame({
               dailyIdealMatches={dailyIdealMatches}
               completionId={completionId}
               completionMode="daily"
-              onNewRound={resetDaily}
+              onNewRound={playClassicFromDaily}
+              newRoundLabel="Play Classic"
               suppressInitialScroll
             />
           ) : null}
