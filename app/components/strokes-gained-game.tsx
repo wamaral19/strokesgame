@@ -709,13 +709,21 @@ function StatList({
     <div className="stat-list" aria-label="Revealed strokes gained stats">
       {CATEGORY_ORDER.map((category) => {
         const isIdeal = category === idealCategory;
+        const value = season?.sg[category];
+        const valueTone = value === undefined
+          ? ""
+          : value > 0
+            ? "stat-row__value--positive"
+            : value < 0
+              ? "stat-row__value--negative"
+              : "stat-row__value--neutral";
         return (
           <div className={`stat-row ${isIdeal ? "stat-row--ideal" : ""}`} key={category}>
             <span>
               {CATEGORY_META[category].statLabel}
               {isIdeal ? <span className="stat-row__ideal-tag">Ideal</span> : null}
             </span>
-            <strong>{season ? formatSg(season.sg[category]) : "—"}</strong>
+            <strong className={valueTone}>{value === undefined ? "—" : formatSg(value)}</strong>
           </div>
         );
       })}

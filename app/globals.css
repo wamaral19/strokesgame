@@ -356,6 +356,18 @@ button {
   font-feature-settings: "tnum";
 }
 
+.stat-row strong.stat-row__value--positive {
+  color: var(--brand-deep);
+}
+
+.stat-row strong.stat-row__value--negative {
+  color: var(--brand-flag);
+}
+
+.stat-row strong.stat-row__value--neutral {
+  color: var(--brand-ink);
+}
+
 .stat-row--ideal,
 .stat-row--ideal strong {
   color: var(--brand-deep);
@@ -1379,8 +1391,8 @@ button {
 .stat-reveal {
   display: grid;
   gap: 10px;
-  border: 1px solid var(--brand-ink);
-  background: var(--surface-raised);
+  border: 1px solid color-mix(in srgb, var(--brand-deep) 55%, transparent);
+  background: color-mix(in srgb, var(--brand-primary) 12%, transparent);
   padding: 14px;
 }
 
