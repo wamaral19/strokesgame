@@ -552,5 +552,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-23",
+    "date": "2026-07-23",
+    "title": "American Ryder Cuppers of Yesterday",
+    "items": [
+      {
+        "id": "2026-07-23-clue-1-hunter-mahan",
+        "playerId": "hunter_mahan",
+        "media": {
+          "kind": "image",
+          "title": "Hunter-Hahan-Swing-scaled.jpg",
+          "src": "/daily-challenges/2026-07-23/hunter-hahan-swing-scaled.jpg",
+          "alt": "Hunter-Hahan-Swing-scaled.jpg"
+        }
+      },
+      {
+        "id": "2026-07-23-clue-2-kenny-perry",
+        "playerId": "kenny_perry",
+        "media": {
+          "kind": "image",
+          "title": "2017_Kenny_Perry_gallery.webp",
+          "src": "/daily-challenges/2026-07-23/2017-kenny-perry-gallery.webp",
+          "alt": "2017_Kenny_Perry_gallery.webp"
+        }
+      },
+      {
+        "id": "2026-07-23-clue-3-j-b-holmes",
+        "playerId": "j_b_holmes",
+        "media": {
+          "kind": "image",
+          "title": "Holmes.jpg",
+          "src": "/daily-challenges/2026-07-23/holmes.jpg",
+          "alt": "Holmes.jpg"
+        }
+      },
+      {
+        "id": "2026-07-23-clue-4-jeff-overton",
+        "playerId": "jeff_overton",
+        "media": {
+          "kind": "image",
+          "title": "Overton_RC.jpg",
+          "src": "/daily-challenges/2026-07-23/overton-rc.jpg",
+          "alt": "Overton_RC.jpg"
+        }
+      }
+    ]
   }
 ]
