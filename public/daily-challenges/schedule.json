@@ -599,5 +599,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-28",
+    "date": "2026-07-28",
+    "title": "Daily Challenge - Winning Records",
+    "items": [
+      {
+        "id": "2026-07-28-clue-1-jim-furyk",
+        "playerId": "jim_furyk",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-28 at 12.16.07 PM.png",
+          "src": "/daily-challenges/2026-07-28/screenshot-2026-07-28-at-12-16-07-pm.png",
+          "alt": "Screenshot 2026-07-28 at 12.16.07 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-28-clue-2-joaquin-niemann",
+        "playerId": "joaquin_niemann",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-28 at 12.19.56 PM.png",
+          "src": "/daily-challenges/2026-07-28/screenshot-2026-07-28-at-12-19-56-pm.png",
+          "alt": "Screenshot 2026-07-28 at 12.19.56 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-28-clue-3-martin-kaymer",
+        "playerId": "martin_kaymer",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-28 at 12.20.04 PM.png",
+          "src": "/daily-challenges/2026-07-28/screenshot-2026-07-28-at-12-20-04-pm.png",
+          "alt": "Screenshot 2026-07-28 at 12.20.04 PM.png"
+        }
+      },
+      {
+        "id": "2026-07-28-clue-4-harris-english",
+        "playerId": "harris_english",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-07-28 at 12.20.09 PM.png",
+          "src": "/daily-challenges/2026-07-28/screenshot-2026-07-28-at-12-20-09-pm.png",
+          "alt": "Screenshot 2026-07-28 at 12.20.09 PM.png"
+        }
+      }
+    ]
   }
 ]
