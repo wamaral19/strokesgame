@@ -646,5 +646,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-07-29",
+    "date": "2026-07-29",
+    "title": "7/29 Daily",
+    "items": [
+      {
+        "id": "2026-07-29-clue-1-willy-wilcox",
+        "playerId": "willy_wilcox",
+        "media": {
+          "kind": "image",
+          "title": "Wilcox-TGJ-Pod-184.jpg",
+          "src": "/daily-challenges/2026-07-29/wilcox-tgj-pod-184.jpg",
+          "alt": "Wilcox-TGJ-Pod-184.jpg"
+        }
+      },
+      {
+        "id": "2026-07-29-clue-2-aaron-baddeley",
+        "playerId": "aaron_baddeley",
+        "media": {
+          "kind": "image",
+          "title": "Aaron_Badderly_2007-04-11.jpg",
+          "src": "/daily-challenges/2026-07-29/aaron-badderly-2007-04-11.jpg",
+          "alt": "Aaron_Badderly_2007-04-11.jpg"
+        }
+      },
+      {
+        "id": "2026-07-29-clue-3-beau-hossler",
+        "playerId": "beau_hossler",
+        "media": {
+          "kind": "image",
+          "title": "beaurista.jpg",
+          "src": "/daily-challenges/2026-07-29/beaurista.jpg",
+          "alt": "beaurista.jpg"
+        }
+      },
+      {
+        "id": "2026-07-29-clue-4-harold-varner-iii",
+        "playerId": "harold_varner_iii",
+        "media": {
+          "kind": "image",
+          "title": "hv3.png",
+          "src": "/daily-challenges/2026-07-29/hv3.png",
+          "alt": "hv3.png"
+        }
+      }
+    ]
   }
 ]
