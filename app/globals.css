@@ -1983,6 +1983,111 @@ button {
   color: rgba(26, 26, 26, 0.6);
 }
 
+/* Resolved-assignment reveal: a category / player / season row plus an SG box.
+   A correct call washes green; a random miss washes red and spins in. */
+.daily-assign {
+  display: grid;
+  gap: 8px;
+  --assign-wash: transparent;
+  --assign-line: var(--line-strong);
+}
+
+.daily-assign--correct {
+  --assign-wash: color-mix(in srgb, var(--brand-deep) 12%, transparent);
+  --assign-line: color-mix(in srgb, var(--brand-deep) 45%, var(--line-strong));
+}
+
+.daily-assign--random {
+  --assign-wash: color-mix(in srgb, var(--brand-flag) 12%, transparent);
+  --assign-line: color-mix(in srgb, var(--brand-flag) 45%, var(--line-strong));
+}
+
+.daily-assign__boxes {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.daily-assign__info {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 6px;
+  min-width: 0;
+}
+
+.daily-assign-cell,
+.daily-assign-sg {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--assign-line);
+  background: var(--assign-wash);
+  min-width: 0;
+}
+
+.daily-assign-cell .eyebrow,
+.daily-assign-sg .eyebrow {
+  color: rgba(26, 26, 26, 0.55);
+}
+
+.daily-assign-cell strong {
+  font-family: var(--font-sans);
+  font-size: clamp(0.95rem, 1.3vw, 1.2rem);
+  font-weight: 720;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.daily-assign-sg {
+  align-content: center;
+  justify-items: end;
+  text-align: right;
+  min-width: 84px;
+}
+
+.daily-assign-sg strong {
+  font-family: var(--font-condensed);
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--brand-ink);
+}
+
+.daily-assign-sg.is-positive strong {
+  color: var(--brand-deep);
+}
+
+.daily-assign-sg.is-negative strong {
+  color: var(--brand-flag);
+}
+
+/* Reuse the reel flicker while a cell's value is still spinning. */
+.daily-assign-cell.is-spinning strong,
+.daily-assign-sg.is-spinning strong {
+  filter: blur(0.7px);
+  animation: reel-pulse 120ms linear infinite;
+}
+
+.daily-assign__answer {
+  margin: 0;
+  font-family: var(--font-condensed);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--brand-flag);
+}
+
+.daily-assign__answer strong {
+  font-weight: 900;
+}
+
+.daily-tile__random {
+  color: rgba(26, 26, 26, 0.55);
+}
+
 .daily-tile__status,
 .daily-tile__reveal,
 .daily-pick {
