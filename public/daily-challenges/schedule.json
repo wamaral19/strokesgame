@@ -693,5 +693,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-03",
+    "date": "2026-08-03",
+    "title": "2026 Winners - Daily Challenge",
+    "items": [
+      {
+        "id": "2026-08-03-clue-1-chris-gotterup",
+        "playerId": "chris_gotterup",
+        "media": {
+          "kind": "image",
+          "title": "Sony Open.avif",
+          "src": "/daily-challenges/2026-08-03/sony-open.avif",
+          "alt": "Sony Open.avif"
+        }
+      },
+      {
+        "id": "2026-08-03-clue-2-justin-rose",
+        "playerId": "justin_rose",
+        "media": {
+          "kind": "image",
+          "title": "farmers insurance open.avif",
+          "src": "/daily-challenges/2026-08-03/farmers-insurance-open.avif",
+          "alt": "farmers insurance open.avif"
+        }
+      },
+      {
+        "id": "2026-08-03-clue-3-jacob-bridgeman",
+        "playerId": "jacob_bridgeman",
+        "media": {
+          "kind": "image",
+          "title": "2026-genesis-invitational-tee-flag.avif",
+          "src": "/daily-challenges/2026-08-03/2026-genesis-invitational-tee-flag.avif",
+          "alt": "2026-genesis-invitational-tee-flag.avif"
+        }
+      },
+      {
+        "id": "2026-08-03-clue-4-matt-fitzpatrick",
+        "playerId": "matt_fitzpatrick",
+        "media": {
+          "kind": "image",
+          "title": "RBC Heritage.webp",
+          "src": "/daily-challenges/2026-08-03/rbc-heritage.webp",
+          "alt": "RBC Heritage.webp"
+        }
+      }
+    ]
   }
 ]
