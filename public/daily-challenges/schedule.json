@@ -881,5 +881,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-07",
+    "date": "2026-08-07",
+    "title": "FedEx Cup Fall",
+    "items": [
+      {
+        "id": "2026-08-07-clue-1-kristoffer-ventura",
+        "playerId": "kristoffer_ventura",
+        "media": {
+          "kind": "image",
+          "title": "kristoffer.jpg",
+          "src": "/daily-challenges/2026-08-07/kristoffer.jpg",
+          "alt": "kristoffer.jpg"
+        }
+      },
+      {
+        "id": "2026-08-07-clue-2-lee-hodges",
+        "playerId": "lee_hodges",
+        "media": {
+          "kind": "image",
+          "title": "lee hodges.avif",
+          "src": "/daily-challenges/2026-08-07/lee-hodges.avif",
+          "alt": "lee hodges.avif"
+        }
+      },
+      {
+        "id": "2026-08-07-clue-3-taylor-moore",
+        "playerId": "taylor_moore",
+        "media": {
+          "kind": "image",
+          "title": "taylor moore.avif",
+          "src": "/daily-challenges/2026-08-07/taylor-moore.avif",
+          "alt": "taylor moore.avif"
+        }
+      },
+      {
+        "id": "2026-08-07-clue-4-a-j-ewart",
+        "playerId": "a_j_ewart",
+        "media": {
+          "kind": "image",
+          "title": "AJ Ewart.png",
+          "src": "/daily-challenges/2026-08-07/aj-ewart.png",
+          "alt": "AJ Ewart.png"
+        }
+      }
+    ]
   }
 ]
