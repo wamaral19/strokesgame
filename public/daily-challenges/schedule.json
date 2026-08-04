@@ -787,5 +787,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-05",
+    "date": "2026-08-05",
+    "title": "LinkedIn Profiles",
+    "items": [
+      {
+        "id": "2026-08-05-clue-1-maverick-mcnealy",
+        "playerId": "maverick_mcnealy",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-08-04 at 11.02.24 AM.png",
+          "src": "/daily-challenges/2026-08-05/screenshot-2026-08-04-at-11-02-24-am.png",
+          "alt": "Screenshot 2026-08-04 at 11.02.24 AM.png"
+        }
+      },
+      {
+        "id": "2026-08-05-clue-2-ben-griffin",
+        "playerId": "ben_griffin",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-08-04 at 11.02.47 AM.png",
+          "src": "/daily-challenges/2026-08-05/screenshot-2026-08-04-at-11-02-47-am.png",
+          "alt": "Screenshot 2026-08-04 at 11.02.47 AM.png"
+        }
+      },
+      {
+        "id": "2026-08-05-clue-3-sahith-theegala",
+        "playerId": "sahith_theegala",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-08-04 at 11.03.09 AM.png",
+          "src": "/daily-challenges/2026-08-05/screenshot-2026-08-04-at-11-03-09-am.png",
+          "alt": "Screenshot 2026-08-04 at 11.03.09 AM.png"
+        }
+      },
+      {
+        "id": "2026-08-05-clue-4-max-greyserman",
+        "playerId": "max_greyserman",
+        "media": {
+          "kind": "image",
+          "title": "Screenshot 2026-08-04 at 11.08.04 AM.png",
+          "src": "/daily-challenges/2026-08-05/screenshot-2026-08-04-at-11-08-04-am.png",
+          "alt": "Screenshot 2026-08-04 at 11.08.04 AM.png"
+        }
+      }
+    ]
   }
 ]
