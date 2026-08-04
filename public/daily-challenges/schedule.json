@@ -834,5 +834,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-06",
+    "date": "2026-08-06",
+    "title": "FedEx Cup Hopefuls - College",
+    "items": [
+      {
+        "id": "2026-08-06-clue-1-ricky-castillo",
+        "playerId": "ricky_castillo",
+        "media": {
+          "kind": "image",
+          "title": "Ricky.jpeg",
+          "src": "/daily-challenges/2026-08-06/ricky.jpeg",
+          "alt": "Ricky.jpeg"
+        }
+      },
+      {
+        "id": "2026-08-06-clue-2-matti-schmid",
+        "playerId": "matti_schmid",
+        "media": {
+          "kind": "image",
+          "title": "matti schmid.webp",
+          "src": "/daily-challenges/2026-08-06/matti-schmid.webp",
+          "alt": "matti schmid.webp"
+        }
+      },
+      {
+        "id": "2026-08-06-clue-3-jordan-smith",
+        "playerId": "jordan_smith",
+        "media": {
+          "kind": "image",
+          "title": "Jordan Smith.webp",
+          "src": "/daily-challenges/2026-08-06/jordan-smith.webp",
+          "alt": "Jordan Smith.webp"
+        }
+      },
+      {
+        "id": "2026-08-06-clue-4-steven-fisk",
+        "playerId": "steven_fisk",
+        "media": {
+          "kind": "image",
+          "title": "steven fisk.jpeg",
+          "src": "/daily-challenges/2026-08-06/steven-fisk.jpeg",
+          "alt": "steven fisk.jpeg"
+        }
+      }
+    ]
   }
 ]
