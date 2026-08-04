@@ -740,5 +740,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-04",
+    "date": "2026-08-04",
+    "title": "Old Timers",
+    "items": [
+      {
+        "id": "2026-08-04-clue-1-jose-maria-olazabal",
+        "playerId": "jose_maria_olazabal",
+        "media": {
+          "kind": "image",
+          "title": "images.jpeg",
+          "src": "/daily-challenges/2026-08-04/images.jpeg",
+          "alt": "images.jpeg"
+        }
+      },
+      {
+        "id": "2026-08-04-clue-2-zach-johnson",
+        "playerId": "zach_johnson",
+        "media": {
+          "kind": "image",
+          "title": "686.png",
+          "src": "/daily-challenges/2026-08-04/686.png",
+          "alt": "686.png"
+        }
+      },
+      {
+        "id": "2026-08-04-clue-3-steve-stricker",
+        "playerId": "steve_stricker",
+        "media": {
+          "kind": "image",
+          "title": "headshots_06527.webp",
+          "src": "/daily-challenges/2026-08-04/headshots-06527.webp",
+          "alt": "headshots_06527.webp"
+        }
+      },
+      {
+        "id": "2026-08-04-clue-4-geoff-ogilvy",
+        "playerId": "geoff_ogilvy",
+        "media": {
+          "kind": "image",
+          "title": "1803.png",
+          "src": "/daily-challenges/2026-08-04/1803.png",
+          "alt": "1803.png"
+        }
+      }
+    ]
   }
 ]
