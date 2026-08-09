@@ -928,5 +928,52 @@
         }
       }
     ]
+  },
+  {
+    "id": "daily-2026-08-10",
+    "date": "2026-08-10",
+    "title": "US Am Past Champs",
+    "items": [
+      {
+        "id": "2026-08-10-clue-1-doc-redman",
+        "playerId": "doc_redman",
+        "media": {
+          "kind": "image",
+          "title": "Doc Redman.jpeg",
+          "src": "/daily-challenges/2026-08-10/doc-redman.jpeg",
+          "alt": "Doc Redman.jpeg"
+        }
+      },
+      {
+        "id": "2026-08-10-clue-2-matt-fitzpatrick",
+        "playerId": "matt_fitzpatrick",
+        "media": {
+          "kind": "image",
+          "title": "Matt Fitz.webp",
+          "src": "/daily-challenges/2026-08-10/matt-fitz.webp",
+          "alt": "Matt Fitz.webp"
+        }
+      },
+      {
+        "id": "2026-08-10-clue-3-bryson-dechambeau",
+        "playerId": "bryson_dechambeau",
+        "media": {
+          "kind": "image",
+          "title": "Bryson.jpg",
+          "src": "/daily-challenges/2026-08-10/bryson.jpg",
+          "alt": "Bryson.jpg"
+        }
+      },
+      {
+        "id": "2026-08-10-clue-4-viktor-hovland",
+        "playerId": "viktor_hovland",
+        "media": {
+          "kind": "image",
+          "title": "Viktor US Am.jpg",
+          "src": "/daily-challenges/2026-08-10/viktor-us-am.jpg",
+          "alt": "Viktor US Am.jpg"
+        }
+      }
+    ]
   }
 ]
