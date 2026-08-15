@@ -977,6 +977,53 @@
     ]
   },
   {
+    "id": "daily-2026-08-14",
+    "date": "2026-08-14",
+    "title": "Who Wears That?",
+    "items": [
+      {
+        "id": "2026-08-14-clue-1-keith-mitchell",
+        "playerId": "keith_mitchell",
+        "media": {
+          "kind": "image",
+          "title": "KMCGV-3_3.webp",
+          "src": "/daily-challenges/2026-08-14/kmcgv-3-3.webp",
+          "alt": "KMCGV-3_3.webp"
+        }
+      },
+      {
+        "id": "2026-08-14-clue-2-sam-burns",
+        "playerId": "sam_burns",
+        "media": {
+          "kind": "image",
+          "title": "Sam Burns Polo Flatlay GPT.png",
+          "src": "/daily-challenges/2026-08-14/sam-burns-polo-flatlay-gpt.png",
+          "alt": "Sam Burns Polo Flatlay GPT.png"
+        }
+      },
+      {
+        "id": "2026-08-14-clue-3-justin-rose",
+        "playerId": "justin_rose",
+        "media": {
+          "kind": "image",
+          "title": "Justin Rose Logo Q Zip.png",
+          "src": "/daily-challenges/2026-08-14/justin-rose-logo-q-zip.png",
+          "alt": "Justin Rose Logo Q Zip.png"
+        }
+      },
+      {
+        "id": "2026-08-14-clue-4-si-woo-kim",
+        "playerId": "si_woo_kim",
+        "media": {
+          "kind": "image",
+          "title": "Si Woo Blade Logo Flatlay 01.png",
+          "src": "/daily-challenges/2026-08-14/si-woo-blade-logo-flatlay-01.png",
+          "alt": "Si Woo Blade Logo Flatlay 01.png"
+        }
+      }
+    ]
+  },
+  {
     "id": "daily-2026-08-15",
     "date": "2026-08-15",
     "title": "US Am Past Winners",
